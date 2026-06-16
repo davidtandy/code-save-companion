@@ -34,6 +34,17 @@ import { IntroStage } from "@/components/IntroStage";
 import bicycle from "@/assets/poster/bicycle.svg";
 import seinCloud from "@/assets/poster/chef-hat.svg";
 import envelope from "@/assets/poster/envelope.svg";
+import { StudentLobby, type StudentIdentity } from "@/components/livequiz/StudentLobby";
+import { StudentQuiz } from "@/components/livequiz/StudentQuiz";
+import { TeacherPanel } from "@/components/livequiz/TeacherPanel";
+
+function getLiveMode(): "student" | "teacher" | null {
+  if (typeof window === "undefined") return null;
+  const p = new URLSearchParams(window.location.search);
+  if (p.has("livequizteacher")) return "teacher";
+  if (p.has("livequiz")) return "student";
+  return null;
+}
 
 type Level = 0 | 1 | 2 | 3 | 4;
 
@@ -83,6 +94,31 @@ const GAME_OPTIONS: { value: GameMode; label: string; icon: React.ElementType; d
 ];
 
 const Index = () => {
+  const [liveMode] = useState(() => getLiveMode());
+  const [studentIdentity, setStudentIdentity] = useState<StudentIdentity | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem("livequiz_student");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const code = new URLSearchParams(window.location.search).get("code")?.toUpperCase();
+      if (parsed?.session_code && code && parsed.session_code === code) return parsed;
+    } catch {}
+    return null;
+  });
+
+  if (liveMode === "student") {
+    if (!studentIdentity) return <StudentLobby onJoined={setStudentIdentity} />;
+    return <StudentQuiz identity={studentIdentity} onLeave={() => {
+      try { localStorage.removeItem("livequiz_student"); } catch {}
+      setStudentIdentity(null);
+    }} />;
+  }
+
+  return <Cheatsheet liveTeacher={liveMode === "teacher"} />;
+};
+
+const Cheatsheet = ({ liveTeacher }: { liveTeacher: boolean }) => {
   const [genderOn, setGenderOn] = useState(false);
   const [caseColorOn, setCaseColorOn] = useState(true);
   const [caseColorMode, setCaseColorMode] = useState<CaseColorMode>("tokens");
@@ -834,6 +870,7 @@ const Index = () => {
 
   return (
     <>
+    {liveTeacher && <TeacherPanel />}
     {showWelcome && (
       <WelcomeModal onDismiss={() => dismissWelcome(false)} onTour={() => dismissWelcome(true)} isMobile={isPortraitMobile} />
     )}
