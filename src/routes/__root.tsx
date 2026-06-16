@@ -81,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover",
       },
-      { title: "Genau — Interactive German Grammar Cheatsheet" },
+      { title: "GenauGenau — Interactive German Grammar Cheatsheet" },
       {
         name: "description",
         content:
@@ -91,6 +91,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
+      { property: "og:title", content: "GenauGenau — Interactive German Grammar Cheatsheet" },
+      { name: "twitter:title", content: "GenauGenau — Interactive German Grammar Cheatsheet" },
+      { name: "description", content: "Cheatsheet is a note-taking application for quick reference and information storage." },
+      { property: "og:description", content: "Cheatsheet is a note-taking application for quick reference and information storage." },
+      { name: "twitter:description", content: "Cheatsheet is a note-taking application for quick reference and information storage." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/83778ebc-c691-4864-a758-099670b4338f/id-preview-2bc11e50--b15b7587-1e33-4e4d-8493-33d65eca0037.lovable.app-1781611161794.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/83778ebc-c691-4864-a758-099670b4338f/id-preview-2bc11e50--b15b7587-1e33-4e4d-8493-33d65eca0037.lovable.app-1781611161794.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
