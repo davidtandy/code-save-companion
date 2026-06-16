@@ -94,6 +94,31 @@ const GAME_OPTIONS: { value: GameMode; label: string; icon: React.ElementType; d
 ];
 
 const Index = () => {
+  const [liveMode] = useState(() => getLiveMode());
+  const [studentIdentity, setStudentIdentity] = useState<StudentIdentity | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem("livequiz_student");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const code = new URLSearchParams(window.location.search).get("code")?.toUpperCase();
+      if (parsed?.session_code && code && parsed.session_code === code) return parsed;
+    } catch {}
+    return null;
+  });
+
+  if (liveMode === "student") {
+    if (!studentIdentity) return <StudentLobby onJoined={setStudentIdentity} />;
+    return <StudentQuiz identity={studentIdentity} onLeave={() => {
+      try { localStorage.removeItem("livequiz_student"); } catch {}
+      setStudentIdentity(null);
+    }} />;
+  }
+
+  return <Cheatsheet liveTeacher={liveMode === "teacher"} />;
+};
+
+const Cheatsheet = ({ liveTeacher }: { liveTeacher: boolean }) => {
   const [genderOn, setGenderOn] = useState(false);
   const [caseColorOn, setCaseColorOn] = useState(true);
   const [caseColorMode, setCaseColorMode] = useState<CaseColorMode>("tokens");
