@@ -630,7 +630,7 @@ export function MobilePosterSlider({
     window.addEventListener("pointerup", onUp);
   };
 
-  // ── Stage pan/pinch ────────────────────────────────────────────────────────
+  // ── Stage pan/pinch + horizontal case swipe ────────────────────────────────
   const didPanRef = useRef(false);
   const pinchRef = useRef({
     pointers: new Map<number, { x: number; y: number }>(),
@@ -641,13 +641,27 @@ export function MobilePosterSlider({
   const [pinchZoom, setPinchZoom] = useState<ZoomState | null>(null);
   const currentBase = () => pinchZoom ?? interpolate(snapZooms, sliderValue);
 
+  // Swipe-to-snap: tracks single-pointer horizontal drag to change case
+  const swipeRef = useRef<{
+    startX: number; startY: number; startSnap: number;
+    intent: "h" | "v" | null; pointerId: number;
+  } | null>(null);
+  const SWIPE_LOCK_PX = 8;    // px of movement before locking direction
+  const SWIPE_COMMIT_PX = 50; // px horizontal delta to commit to next case
+
   const onStagePointerDown = (e: React.PointerEvent) => {
     pinchRef.current.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     pinchRef.current.moved = false;
     const base = currentBase();
     if (pinchRef.current.pointers.size === 1) {
       pinchRef.current.singleStart = { x: e.clientX, y: e.clientY, tx: base.tx, ty: base.ty };
+      swipeRef.current = {
+        startX: e.clientX, startY: e.clientY,
+        startSnap: Math.round(sliderValueRef.current),
+        intent: null, pointerId: e.pointerId,
+      };
     } else if (pinchRef.current.pointers.size === 2) {
+      swipeRef.current = null; // two fingers = pinch, not swipe
       pinchRef.current.singleStart = null;
       const pts = Array.from(pinchRef.current.pointers.values());
       pinchRef.current.startDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
@@ -669,6 +683,31 @@ export function MobilePosterSlider({
       }
       return;
     }
+    // Single pointer — check swipe direction before applying pan
+    const sw = swipeRef.current;
+    if (sw && e.pointerId === sw.pointerId) {
+      const sdx = e.clientX - sw.startX;
+      const sdy = e.clientY - sw.startY;
+      if (sw.intent === null && Math.hypot(sdx, sdy) > SWIPE_LOCK_PX) {
+        sw.intent = Math.abs(sdx) > Math.abs(sdy) ? "h" : "v";
+        if (sw.intent === "v") {
+          // Reset pan anchor to avoid a positional jump after the dead-zone
+          const base = currentBase();
+          pinchRef.current.singleStart = { x: e.clientX, y: e.clientY, tx: base.tx, ty: base.ty };
+        }
+      }
+      if (sw.intent === "h") {
+        // Move slider live to give visual feedback during drag
+        const stageW = stageRef.current?.getBoundingClientRect().width ?? 390;
+        const newVal = Math.max(0, Math.min(SNAP_COUNT - 1, sw.startSnap - sdx / (stageW / 2)));
+        sliderValueRef.current = newVal;
+        setSliderValue(newVal);
+        pinchRef.current.moved = true;
+        return; // don't pan while swiping horizontally
+      }
+      if (sw.intent === null) return; // direction undetermined — suppress movement
+      // sw.intent === "v": fall through to normal pan
+    }
     const ss = pinchRef.current.singleStart;
     if (!ss) return;
     const dx = e.clientX - ss.x, dy = e.clientY - ss.y;
@@ -679,6 +718,20 @@ export function MobilePosterSlider({
     });
   };
   const onStagePointerUp = (e: React.PointerEvent) => {
+    const sw = swipeRef.current;
+    if (sw && e.pointerId === sw.pointerId && sw.intent === "h") {
+      const sdx = e.clientX - sw.startX;
+      swipeRef.current = null;
+      pinchRef.current.moved = false;
+      pinchRef.current.pointers.delete(e.pointerId);
+      if (pinchRef.current.pointers.size === 0) { setPinchZoom(null); pinchRef.current.singleStart = null; }
+      didPanRef.current = true; // suppress tap-through after a swipe gesture
+      if (sdx < -SWIPE_COMMIT_PX) snapTo(Math.min(SNAP_COUNT - 1, sw.startSnap + 1));
+      else if (sdx > SWIPE_COMMIT_PX) snapTo(Math.max(0, sw.startSnap - 1));
+      else snapTo(sw.startSnap); // below threshold — snap back
+      return;
+    }
+    swipeRef.current = null;
     pinchRef.current.pointers.delete(e.pointerId);
     if (pinchRef.current.pointers.size === 0) {
       if (pinchRef.current.moved) {
@@ -720,7 +773,18 @@ export function MobilePosterSlider({
         onPointerDown={onStagePointerDown}
         onPointerMove={onStagePointerMove}
         onPointerUp={onStagePointerUp}
-        onPointerCancel={onStagePointerUp}
+        onPointerCancel={(e) => {
+          const sw = swipeRef.current;
+          if (sw?.intent === "h" && e.pointerId === sw.pointerId) {
+            swipeRef.current = null;
+            pinchRef.current.moved = false;
+            pinchRef.current.pointers.delete(e.pointerId);
+            if (pinchRef.current.pointers.size === 0) { setPinchZoom(null); pinchRef.current.singleStart = null; }
+            snapTo(sw.startSnap); // always snap back on cancel
+          } else {
+            onStagePointerUp(e);
+          }
+        }}
         onClickCapture={(e) => {
           if (didPanRef.current) { e.stopPropagation(); e.preventDefault(); didPanRef.current = false; }
         }}

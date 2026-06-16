@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import QRCode from "react-qr-code";
 import { avatarSrc } from "./avatars";
@@ -14,10 +14,12 @@ import {
 } from "@/lib/livequiz.functions";
 
 function makeCode(): string {
+  // Timestamp prefix guarantees uniqueness even under rapid double-submit
+  const ts = Date.now().toString(36).toUpperCase();
   const ch = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let s = "";
-  for (let i = 0; i < 8; i++) s += ch[Math.floor(Math.random() * ch.length)];
-  return s;
+  let r = "";
+  for (let i = 0; i < 4; i++) r += ch[Math.floor(Math.random() * ch.length)];
+  return ts + r;
 }
 
 type Session = {
@@ -38,6 +40,7 @@ export function TeacherPanel() {
   const [responses, setResponses] = useState<any[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const [creating, setCreating] = useState(false);
+  const creatingRef = useRef(false); // synchronous guard against double-submit
 
   const createFn     = useServerFn(createLiveSession);
   const getTeacherFn = useServerFn(getTeacherSession);
@@ -79,6 +82,8 @@ export function TeacherPanel() {
   }, [responses]);
 
   async function createSession() {
+    if (creatingRef.current) return;
+    creatingRef.current = true;
     setCreating(true);
     try {
       const row = await createFn({
@@ -91,6 +96,7 @@ export function TeacherPanel() {
     } catch (e: any) {
       alert(e?.message ?? "Could not create session. Reset any existing session first.");
     } finally {
+      creatingRef.current = false;
       setCreating(false);
     }
   }
