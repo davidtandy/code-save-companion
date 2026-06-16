@@ -1,12 +1,18 @@
 // @ts-nocheck
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { qrSvgDataUrl } from "./qr";
 import { avatarSrc } from "./avatars";
 import { sampleQuestions, PILL_LABEL } from "./scoring";
 import { Play, SkipForward, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  createLiveSession,
+  getTeacherSession,
+  updateLiveSession,
+  listResponses,
+} from "@/lib/livequiz.functions";
 
 function makeCode(): string {
   const ch = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -18,6 +24,7 @@ function makeCode(): string {
 type Session = {
   id: string;
   code: string;
+  host_token: string;
   phase: "lobby" | "active" | "results" | "ended";
   current_question_index: number;
   question_started_at: string | null;
@@ -29,91 +36,95 @@ const STORAGE_KEY = "livequiz_teacher_session";
 
 export function TeacherPanel() {
   const [session, setSession] = useState<Session | null>(null);
-  const [participants, setParticipants] = useState<Map<string, { name: string; avatar: string }>>(new Map());
   const [responses, setResponses] = useState<any[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const [creating, setCreating] = useState(false);
+
+  const createFn = useServerFn(createLiveSession);
+  const getTeacherFn = useServerFn(getTeacherSession);
+  const updateFn = useServerFn(updateLiveSession);
+  const listFn = useServerFn(listResponses);
 
   // Restore session from localStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
-      const { id, code } = JSON.parse(raw);
-      supabase.from("quiz_session").select("*").eq("id", id).maybeSingle().then(({ data }) => {
-        if (data && data.code === code) setSession(data as any);
-      });
+      const { id, hostToken } = JSON.parse(raw);
+      if (!id || !hostToken) return;
+      getTeacherFn({ data: { sessionId: id, hostToken } }).then((row) => {
+        if (row) setSession(row as Session);
+      }).catch(() => {});
     } catch {}
   }, []);
 
-  // Subscribe to updates for the current session
+  // Poll responses every 2s while a session exists
   useEffect(() => {
     if (!session?.id) return;
-    supabase.from("quiz_responses").select("*").eq("session_id", session.id).then(({ data }) => setResponses(data ?? []));
+    let cancelled = false;
+    async function tick() {
+      try {
+        const rows = await listFn({ data: { sessionId: session.id, hostToken: session.host_token } });
+        if (!cancelled) setResponses(rows as any[]);
+      } catch {}
+    }
+    tick();
+    const iv = setInterval(tick, 2000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, [session?.id, session?.host_token]);
 
-    const channel = supabase
-      .channel(`teacher-${session.id}`)
-      .on("postgres_changes",
-        { event: "UPDATE", schema: "public", table: "quiz_session", filter: `id=eq.${session.id}` },
-        (p) => setSession((prev) => prev ? { ...prev, ...(p.new as any) } : prev))
-      .on("postgres_changes",
-        { event: "INSERT", schema: "public", table: "quiz_responses", filter: `session_id=eq.${session.id}` },
-        (p) => setResponses((prev) => [...prev, p.new]))
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [session?.id]);
+  // Also poll the session row itself (cheap) so phase changes locally if needed
+  // (Not strictly required — teacher initiates all phase changes.)
 
-  // Derive participants from responses
-  useEffect(() => {
+  const participants = useMemo(() => {
     const m = new Map<string, { name: string; avatar: string }>();
     for (const r of responses) {
       if (!m.has(r.student_id)) m.set(r.student_id, { name: r.student_name, avatar: r.student_avatar });
     }
-    setParticipants(m);
+    return m;
   }, [responses]);
 
   async function createSession() {
     setCreating(true);
     for (let tries = 0; tries < 5; tries++) {
       const code = makeCode();
-      const questions = sampleQuestions(10);
-      const { data, error } = await supabase.from("quiz_session").insert({
-        code,
-        game_mode: "prep-lock",
-        phase: "lobby",
-        current_question_index: 0,
-        timer_max_seconds: 30,
-        questions,
-      }).select().single();
-      if (!error && data) {
-        setSession(data as any);
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: data.id, code: data.code })); } catch {}
+      try {
+        const row = await createFn({ data: {
+          code,
+          gameMode: "prep-lock",
+          questions: sampleQuestions(10),
+          timerMaxSeconds: 30,
+        }});
+        setSession(row as Session);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: (row as any).id, hostToken: (row as any).host_token }));
+        } catch {}
         setCreating(false);
         return;
+      } catch {
+        // duplicate code or transient — retry
       }
     }
     setCreating(false);
   }
 
-  async function startQuiz() {
+  async function applyPatch(patch: any) {
     if (!session) return;
-    await supabase.from("quiz_session").update({
-      phase: "active",
-      current_question_index: 0,
-      question_started_at: new Date().toISOString(),
-    }).eq("id", session.id);
+    await updateFn({ data: { sessionId: session.id, hostToken: session.host_token, patch } });
+    setSession({ ...session, ...patch });
+  }
+
+  async function startQuiz() {
+    await applyPatch({ phase: "active", current_question_index: 0, question_started_at: new Date().toISOString() });
   }
 
   async function nextQuestion() {
     if (!session) return;
     const next = session.current_question_index + 1;
     if (next >= session.questions.length) {
-      await supabase.from("quiz_session").update({ phase: "results" }).eq("id", session.id);
+      await applyPatch({ phase: "results" });
     } else {
-      await supabase.from("quiz_session").update({
-        current_question_index: next,
-        question_started_at: new Date().toISOString(),
-      }).eq("id", session.id);
+      await applyPatch({ current_question_index: next, question_started_at: new Date().toISOString() });
     }
   }
 
@@ -121,7 +132,7 @@ export function TeacherPanel() {
     if (!session) return;
     if (!confirm("End this session and start a new one?")) return;
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
-    await supabase.from("quiz_session").update({ phase: "ended" }).eq("id", session.id);
+    await updateFn({ data: { sessionId: session.id, hostToken: session.host_token, patch: { phase: "ended" } } }).catch(() => {});
     setSession(null);
     setResponses([]);
   }
@@ -134,7 +145,6 @@ export function TeacherPanel() {
 
   const qrDataUrl = useMemo(() => session ? qrSvgDataUrl(joinUrl, 240) : "", [joinUrl, session]);
 
-  // Per-question answered count
   const answeredThisQuestion = session
     ? responses.filter((r) => r.question_index === session.current_question_index).length
     : 0;
