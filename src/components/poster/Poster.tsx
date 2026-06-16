@@ -1031,33 +1031,37 @@ export const Poster = forwardRef<PosterHandle, Props>(
             </div>
           </div>
 
-          {/* Floating cloud stamps centered in the gutters between case columns. z-0 so pills (default stacking) sit above. */}
-          <button
-            ref={(el) => registerRef("verb-lieben", el)}
-            data-cell-id="verb-lieben"
-            onClick={(e) => { e.stopPropagation(); if (onTapVerbCloud) { onTapVerbCloud(); } else { tap("verb-lieben"); } }}
-            aria-label="lieben — to love"
-            className={cn(
-              "absolute z-20 active:scale-95 transition-all rounded-full cloud-float-a opacity-30 hover:opacity-100",
-              activeWordId === "verb-lieben" && "ring-2 ring-poster-green ring-offset-2 cloud-float-paused",
-            )}
-            style={{ left: "37.33%", top: "12%" }}
-          >
-            <img src={liebenStamp} alt="" className="h-16 object-contain pointer-events-none" draggable={false} />
-          </button>
-          <button
-            ref={(el) => registerRef("verb-geben", el)}
-            data-cell-id="verb-geben"
-            onClick={(e) => { e.stopPropagation(); if (onTapVerbCloud) { onTapVerbCloud(); } else { tap("verb-geben"); } }}
-            aria-label="geben — to give"
-            className={cn(
-              "absolute z-20 active:scale-95 transition-all rounded-full cloud-float-b opacity-30 hover:opacity-100",
-              activeWordId === "verb-geben" && "ring-2 ring-poster-purple ring-offset-2 cloud-float-paused",
-            )}
-            style={{ left: "66%", top: "12%" }}
-          >
-            <img src={gebenStamp} alt="" className="h-16 object-contain pointer-events-none" draggable={false} />
-          </button>
+          {/* Floating cloud stamps — desktop only */}
+          {!slimPills && (
+            <>
+              <button
+                ref={(el) => registerRef("verb-lieben", el)}
+                data-cell-id="verb-lieben"
+                onClick={(e) => { e.stopPropagation(); if (onTapVerbCloud) { onTapVerbCloud(); } else { tap("verb-lieben"); } }}
+                aria-label="lieben — to love"
+                className={cn(
+                  "absolute z-20 active:scale-95 transition-all rounded-full cloud-float-a opacity-30 hover:opacity-100",
+                  activeWordId === "verb-lieben" && "ring-2 ring-poster-green ring-offset-2 cloud-float-paused",
+                )}
+                style={{ left: "37.33%", top: "12%" }}
+              >
+                <img src={liebenStamp} alt="" className="h-16 object-contain pointer-events-none" draggable={false} />
+              </button>
+              <button
+                ref={(el) => registerRef("verb-geben", el)}
+                data-cell-id="verb-geben"
+                onClick={(e) => { e.stopPropagation(); if (onTapVerbCloud) { onTapVerbCloud(); } else { tap("verb-geben"); } }}
+                aria-label="geben — to give"
+                className={cn(
+                  "absolute z-20 active:scale-95 transition-all rounded-full cloud-float-b opacity-30 hover:opacity-100",
+                  activeWordId === "verb-geben" && "ring-2 ring-poster-purple ring-offset-2 cloud-float-paused",
+                )}
+                style={{ left: "66%", top: "12%" }}
+              >
+                <img src={gebenStamp} alt="" className="h-16 object-contain pointer-events-none" draggable={false} />
+              </button>
+            </>
+          )}
         </div>
 
         {/* Possessives — desktop: normal flow row. Mobile: each pill is permanently
