@@ -1279,8 +1279,8 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
           onExit={() => { setGameMode("explore"); setPrepLockStep("case"); setPrepLockCase(null); }}
         />
       )}
-      <FlourishTuner />
-      <LoadFlickerTuner />
+      {!isPortraitMobile && <FlourishTuner />}
+      {!isPortraitMobile && <LoadFlickerTuner />}
       {verbCloudOpen && <VerbCloudOverlay onClose={() => setVerbCloudOpen(false)} />}
       {!isPortraitMobile && casePopup && (
         <CaseHeaderPopup
