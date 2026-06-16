@@ -1,6 +1,8 @@
 // @ts-nocheck
-import { createContext, useContext, useEffect, useState, useRef, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
+// Polls public session + student state via server fns. No realtime, no direct DB access.
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { getPublicSession, getStudentState } from "@/lib/livequiz.functions";
 import type { QuizQuestion } from "@/components/poster/quiz/quizData";
 
 export type SessionPhase = "lobby" | "active" | "results" | "ended";
@@ -16,86 +18,82 @@ export type LiveSession = {
   game_mode: string;
 };
 
-export type Participant = {
-  student_id: string;
-  student_name: string;
-  student_avatar: string;
-};
+export type LeaderboardEntry = { id: string; name: string; avatar: string; points: number };
 
 type Ctx = {
   session: LiveSession | null;
-  participants: Participant[];
-  responses: any[];
+  myResponses: any[];
+  leaderboard: LeaderboardEntry[];
+  joinedCount: number;
   loading: boolean;
   error: string | null;
 };
 
-const LiveQuizContext = createContext<Ctx>({ session: null, participants: [], responses: [], loading: true, error: null });
+const LiveQuizContext = createContext<Ctx>({
+  session: null, myResponses: [], leaderboard: [], joinedCount: 0, loading: true, error: null,
+});
 
 export function useLiveQuiz() { return useContext(LiveQuizContext); }
 
-export function LiveQuizProvider({ code, children }: { code: string; children: React.ReactNode }) {
+export function LiveQuizProvider({
+  code,
+  studentId,
+  children,
+}: {
+  code: string;
+  studentId: string;
+  children: React.ReactNode;
+}) {
   const [session, setSession] = useState<LiveSession | null>(null);
-  const [responses, setResponses] = useState<any[]>([]);
+  const [myResponses, setMyResponses] = useState<any[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [joinedCount, setJoinedCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const lookupFn = useServerFn(getPublicSession);
+  const stateFn = useServerFn(getStudentState);
+
+  // Poll session by code every 1s
   useEffect(() => {
     let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("quiz_session")
-        .select("*")
-        .eq("code", code.toUpperCase())
-        .maybeSingle();
-      if (cancelled) return;
-      if (error || !data) { setError(error?.message ?? "Session not found"); setLoading(false); return; }
-      setSession(data as any);
-      const { data: resp } = await supabase
-        .from("quiz_responses")
-        .select("*")
-        .eq("session_id", data.id);
-      if (cancelled) return;
-      setResponses(resp ?? []);
-      setLoading(false);
-    }
-    load();
-
-    return () => { cancelled = true; };
-  }, [code]);
-
-  useEffect(() => {
-    if (!session) return;
-    const channel = supabase
-      .channel(`live-${session.id}`)
-      .on("postgres_changes",
-        { event: "UPDATE", schema: "public", table: "quiz_session", filter: `id=eq.${session.id}` },
-        (payload) => setSession((prev) => prev ? { ...prev, ...(payload.new as any) } : prev))
-      .on("postgres_changes",
-        { event: "INSERT", schema: "public", table: "quiz_responses", filter: `session_id=eq.${session.id}` },
-        (payload) => setResponses((prev) => [...prev, payload.new]))
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [session?.id]);
-
-  const participants = useMemo<Participant[]>(() => {
-    const map = new Map<string, Participant>();
-    for (const r of responses) {
-      if (!map.has(r.student_id)) {
-        map.set(r.student_id, {
-          student_id: r.student_id,
-          student_name: r.student_name,
-          student_avatar: r.student_avatar,
-        });
+    async function tick() {
+      try {
+        const s = await lookupFn({ data: { code } });
+        if (cancelled) return;
+        if (!s) { setError("Session not found"); setLoading(false); return; }
+        setSession(s as LiveSession);
+        setError(null);
+        setLoading(false);
+      } catch (e: any) {
+        if (!cancelled) { setError(e?.message ?? "Network error"); setLoading(false); }
       }
     }
-    return [...map.values()];
-  }, [responses]);
+    tick();
+    const iv = setInterval(tick, 1000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, [code]);
+
+  // Poll student state every 2s (only when we have a session id)
+  useEffect(() => {
+    if (!session?.id) return;
+    let cancelled = false;
+    async function tick() {
+      try {
+        const r = await stateFn({ data: { sessionId: session.id, studentId } });
+        if (cancelled) return;
+        setMyResponses((r as any).mine ?? []);
+        setLeaderboard((r as any).leaderboard ?? []);
+        setJoinedCount((r as any).joinedCount ?? 0);
+      } catch {}
+    }
+    tick();
+    const iv = setInterval(tick, 2000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, [session?.id, studentId]);
 
   return (
-    <LiveQuizContext.Provider value={{ session, participants, responses, loading, error }}>
+    <LiveQuizContext.Provider value={{ session, myResponses, leaderboard, joinedCount, loading, error }}>
       {children}
     </LiveQuizContext.Provider>
   );
