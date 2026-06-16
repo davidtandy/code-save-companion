@@ -1,42 +1,44 @@
 // @ts-nocheck
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { LiveQuizProvider, useLiveQuiz } from "./LiveQuizProvider";
 import { LivePillBoard } from "./LivePillBoard";
-import { avatarSrc, AVATARS } from "./avatars";
-import { scoreFor } from "./scoring";
+import { avatarSrc } from "./avatars";
 import type { StudentIdentity } from "./StudentLobby";
 import { Button } from "@/components/ui/button";
+import { useServerFn } from "@tanstack/react-start";
+import { submitResponse } from "@/lib/livequiz.functions";
 
 type Props = { identity: StudentIdentity; onLeave: () => void };
 
 export function StudentQuiz({ identity, onLeave }: Props) {
   return (
-    <LiveQuizProvider code={identity.session_code}>
+    <LiveQuizProvider code={identity.session_code} studentId={identity.student_id}>
       <StudentQuizInner identity={identity} onLeave={onLeave} />
     </LiveQuizProvider>
   );
 }
 
 function StudentQuizInner({ identity, onLeave }: Props) {
-  const { session, responses, loading, error } = useLiveQuiz();
+  const { session, myResponses, leaderboard, joinedCount, loading, error } = useLiveQuiz();
   const [submitting, setSubmitting] = useState(false);
+  const submitFn = useServerFn(submitResponse);
 
   if (loading) return <Centered>Loading…</Centered>;
-  if (error || !session) return <Centered>
-    <div className="text-destructive mb-4">{error ?? "Session not found"}</div>
-    <Button onClick={onLeave}>Back</Button>
-  </Centered>;
+  if (error || !session) return (
+    <Centered>
+      <div className="text-destructive mb-4">{error ?? "Session not found"}</div>
+      <Button onClick={onLeave}>Back</Button>
+    </Centered>
+  );
 
   if (session.phase === "lobby") {
-    const others = new Set(responses.filter(r => r.question_index === -1).map(r => r.student_id));
     return (
       <Centered>
         <div className="text-center space-y-6">
           <div className="text-2xl font-bold">Waiting for teacher…</div>
           <img src={avatarSrc(identity.student_avatar)} alt="" className="w-24 h-24 mx-auto" />
           <div className="text-lg">{identity.student_name}</div>
-          <div className="text-sm text-muted-foreground">{others.size} student{others.size === 1 ? "" : "s"} joined</div>
+          <div className="text-sm text-muted-foreground">{joinedCount} student{joinedCount === 1 ? "" : "s"} joined</div>
           <Button variant="ghost" onClick={onLeave}>Leave</Button>
         </div>
       </Centered>
@@ -44,7 +46,7 @@ function StudentQuizInner({ identity, onLeave }: Props) {
   }
 
   if (session.phase === "results" || session.phase === "ended") {
-    return <Leaderboard responses={responses} myId={identity.student_id} onLeave={onLeave} />;
+    return <Leaderboard leaderboard={leaderboard} myId={identity.student_id} onLeave={onLeave} />;
   }
 
   // active
@@ -55,31 +57,25 @@ function StudentQuizInner({ identity, onLeave }: Props) {
   const startedAt = session.question_started_at ? new Date(session.question_started_at).getTime() : Date.now();
   const timerMaxMs = (session.timer_max_seconds || 30) * 1000;
 
-  const myAnswer = responses.find(
-    (r) => r.student_id === identity.student_id && r.question_index === idx,
-  );
+  const myAnswer = myResponses.find((r) => r.question_index === idx);
   const locked = !!myAnswer;
-  const totalPoints = responses
-    .filter((r) => r.student_id === identity.student_id && r.question_index >= 0)
+  const totalPoints = myResponses
+    .filter((r) => r.question_index >= 0)
     .reduce((sum, r) => sum + (r.points || 0), 0);
 
   async function handleAnswer(pillId: string) {
     if (locked || submitting) return;
     setSubmitting(true);
-    const elapsed = Date.now() - startedAt;
-    const correct = pillId === q.correctPillId;
-    const points = scoreFor(correct, elapsed, timerMaxMs);
-    await supabase.from("quiz_responses").upsert({
-      session_id: session.id,
-      student_id: identity.student_id,
-      student_name: identity.student_name,
-      student_avatar: identity.student_avatar,
-      question_index: idx,
-      answer: pillId,
-      is_correct: correct,
-      response_ms: elapsed,
-      points,
-    }, { onConflict: "session_id,student_id,question_index" });
+    try {
+      await submitFn({ data: {
+        sessionId: session.id,
+        studentId: identity.student_id,
+        studentName: identity.student_name,
+        studentAvatar: identity.student_avatar,
+        questionIndex: idx,
+        answer: pillId,
+      }});
+    } catch {}
     setSubmitting(false);
   }
 
@@ -119,23 +115,12 @@ function StudentQuizInner({ identity, onLeave }: Props) {
   );
 }
 
-function Leaderboard({ responses, myId, onLeave }: { responses: any[]; myId: string; onLeave: () => void }) {
-  const totals = useMemo(() => {
-    const m = new Map<string, { id: string; name: string; avatar: string; points: number }>();
-    for (const r of responses) {
-      if (r.question_index < 0) continue;
-      const cur = m.get(r.student_id) ?? { id: r.student_id, name: r.student_name, avatar: r.student_avatar, points: 0 };
-      cur.points += r.points || 0;
-      m.set(r.student_id, cur);
-    }
-    return [...m.values()].sort((a, b) => b.points - a.points);
-  }, [responses]);
-
+function Leaderboard({ leaderboard, myId, onLeave }: { leaderboard: any[]; myId: string; onLeave: () => void }) {
   return (
     <div className="min-h-screen flex flex-col items-center p-6 bg-background">
       <h1 className="text-3xl font-bold mb-6">Leaderboard</h1>
       <div className="w-full max-w-md space-y-2">
-        {totals.slice(0, 10).map((t, i) => (
+        {leaderboard.map((t, i) => (
           <div key={t.id} className={`flex items-center gap-3 rounded-xl p-3 border-2 ${t.id === myId ? "border-primary bg-primary/10" : "border-border bg-card"}`}>
             <div className="text-2xl font-bold w-8 text-center">{i + 1}</div>
             <img src={avatarSrc(t.avatar)} alt="" className="w-10 h-10" />

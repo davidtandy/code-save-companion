@@ -70,6 +70,7 @@ export type Database = {
           created_at: string
           current_question_index: number
           game_mode: string
+          host_token: string
           id: string
           phase: string
           question_started_at: string | null
@@ -82,6 +83,7 @@ export type Database = {
           created_at?: string
           current_question_index?: number
           game_mode: string
+          host_token?: string
           id?: string
           phase?: string
           question_started_at?: string | null
@@ -94,6 +96,7 @@ export type Database = {
           created_at?: string
           current_question_index?: number
           game_mode?: string
+          host_token?: string
           id?: string
           phase?: string
           question_started_at?: string | null

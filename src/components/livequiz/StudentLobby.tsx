@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 import { AVATARS } from "./avatars";
+import { useServerFn } from "@tanstack/react-start";
+import { getPublicSession, joinSession } from "@/lib/livequiz.functions";
 
 const STORAGE_KEY = "livequiz_student";
 
@@ -42,7 +43,9 @@ export function StudentLobby({ onJoined }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Restore previous identity for same session if rejoining
+  const lookupFn = useServerFn(getPublicSession);
+  const joinFn = useServerFn(joinSession);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -60,38 +63,33 @@ export function StudentLobby({ onJoined }: Props) {
     if (!code.trim() || !name.trim()) { setError("Enter a code and your name."); return; }
     setBusy(true);
 
-    const { data: sess, error: sErr } = await supabase
-      .from("quiz_session")
-      .select("id, code")
-      .eq("code", code.trim().toUpperCase())
-      .maybeSingle();
-    if (sErr || !sess) { setError("Session not found."); setBusy(false); return; }
+    try {
+      const sess = await lookupFn({ data: { code: code.trim().toUpperCase() } });
+      if (!sess) { setError("Session not found."); setBusy(false); return; }
 
-    const student_id = getOrCreateStudentId();
-    const identity: StudentIdentity = {
-      student_id,
-      student_name: name.trim(),
-      student_avatar: avatar,
-      session_id: sess.id,
-      session_code: sess.code,
-    };
+      const student_id = getOrCreateStudentId();
+      const identity: StudentIdentity = {
+        student_id,
+        student_name: name.trim(),
+        student_avatar: avatar,
+        session_id: (sess as any).id,
+        session_code: (sess as any).code,
+      };
 
-    // Write a join row (question_index=-1) so teacher sees participant
-    const { error: insErr } = await supabase.from("quiz_responses").upsert({
-      session_id: sess.id,
-      student_id,
-      student_name: identity.student_name,
-      student_avatar: identity.student_avatar,
-      question_index: -1,
-      answer: "join",
-      is_correct: false,
-      response_ms: 0,
-      points: 0,
-    }, { onConflict: "session_id,student_id,question_index" });
-    if (insErr) { setError("Couldn't join session."); setBusy(false); return; }
+      await joinFn({ data: {
+        sessionId: identity.session_id,
+        studentId: student_id,
+        studentName: identity.student_name,
+        studentAvatar: identity.student_avatar,
+      }});
 
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(identity)); } catch {}
-    onJoined(identity);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(identity)); } catch {}
+      onJoined(identity);
+    } catch (e: any) {
+      setError(e?.message ?? "Couldn't join session.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
