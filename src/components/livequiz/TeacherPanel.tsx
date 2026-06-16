@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import QRCode from "react-qr-code";
 import { avatarSrc } from "./avatars";
-import { sampleQuestions, PILL_LABEL, pillsForQuestion, eliminationOrder } from "./scoring";
+import { sampleQuestions, PILL_LABEL, eliminationOrderFull } from "./scoring";
 import { Play, SkipForward, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -155,8 +155,8 @@ export function TeacherPanel() {
     : 0;
   const cappedElimCount = activeQ
     ? Math.min(
-        Math.floor(elimProgress * eliminationOrder(activeQ, pillsForQuestion(activeQ)).length),
-        Math.max(0, eliminationOrder(activeQ, pillsForQuestion(activeQ)).length - 1),
+        Math.floor(elimProgress * eliminationOrderFull(activeQ).length),
+        Math.max(0, eliminationOrderFull(activeQ).length - 1),
       )
     : 0;
 
@@ -165,7 +165,7 @@ export function TeacherPanel() {
       document.querySelectorAll("[data-quiz-elim]").forEach((el) => el.removeAttribute("data-quiz-elim"));
     clear();
     if (!activeQ || session?.phase !== "active" || cappedElimCount === 0) return clear;
-    const order = eliminationOrder(activeQ, pillsForQuestion(activeQ));
+    const order = eliminationOrderFull(activeQ);
     order.slice(0, cappedElimCount).forEach((pillId) => {
       document.querySelectorAll(`[data-cell-id="${pillId}"]`).forEach((el) =>
         (el as HTMLElement).setAttribute("data-quiz-elim", "1"),
@@ -190,121 +190,120 @@ export function TeacherPanel() {
 
   return (
     <>
-      {/* ── Large question display — left half of screen, active phase only ── */}
-      {activeQ && (
-        <div className="fixed left-0 top-0 bottom-0 w-[52%] z-40 flex flex-col items-center justify-center pointer-events-none px-16">
-          <div className="text-center space-y-6">
-            <div className="text-[11px] uppercase tracking-widest text-poster-ink/40 font-semibold">
-              Question {session.current_question_index + 1} of {session.questions.length}
-              {" · "}{answeredThisQ} / {participants.size} answered
-            </div>
-            <div className="text-7xl font-bold text-poster-ink leading-tight tracking-tight">
-              {prompt}
-            </div>
-            {promptEn && (
-              <div className="text-2xl text-poster-ink/50 font-medium">{promptEn}</div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* ── Left teacher panel: QR → question → controls ── */}
+      <div className="fixed left-0 top-[52px] bottom-0 w-80 z-50 flex flex-col p-4 gap-3 pointer-events-none">
 
-      {/* ── QR corner widget — fixed top-right, just below the header ── */}
-      <div className="fixed top-[52px] right-4 z-40 flex flex-col items-center gap-2">
-        <div className="text-[11px] uppercase tracking-widest text-poster-ink/50 font-semibold text-center">
-          Scan to join the quiz!
-        </div>
-        <div className="bg-white rounded-2xl p-3 shadow-lg border border-poster-ink/10">
+        {/* QR card */}
+        <div className="pointer-events-auto flex flex-col items-center gap-2 bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-poster-ink/10">
+          <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold">
+            Scan to join the quiz!
+          </div>
           <QRCode value={joinUrl} size={192} level="M" />
+          <div className="text-[9px] text-poster-ink/30 tracking-wide">{joinUrl}</div>
         </div>
-        <div className="text-[10px] text-poster-ink/30 tracking-wide">
-          {joinUrl}
+
+        {/* Question text — floats over cheatsheet, grows to fill space */}
+        <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 px-2">
+          {activeQ && (
+            <>
+              <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold bg-white/70 backdrop-blur-sm rounded-full px-3 py-1">
+                Q{session.current_question_index + 1} / {session.questions.length}
+                {" · "}{answeredThisQ} / {participants.size} answered
+              </div>
+              <div className="text-6xl font-bold text-poster-ink leading-tight tracking-tight drop-shadow-sm">
+                {prompt}
+              </div>
+              {promptEn && (
+                <div className="text-xl text-poster-ink/60 font-medium drop-shadow-sm">{promptEn}</div>
+              )}
+            </>
+          )}
         </div>
-      </div>
 
-      {/* ── Controls panel — fixed bottom-right ── */}
-      <div className="fixed bottom-4 right-4 z-50 w-64 max-w-[calc(100vw-2rem)] bg-poster-bg rounded-2xl shadow-2xl overflow-hidden border border-poster-ink/10">
-        <button
-          onClick={() => setCollapsed((c) => !c)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-poster-teal text-white"
-        >
-          <span className="font-bold text-sm tracking-tight">Live Quiz · Teacher</span>
-          {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </button>
+        {/* Controls */}
+        <div className="pointer-events-auto bg-poster-bg/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden border border-poster-ink/10">
+          <button
+            onClick={() => setCollapsed((c) => !c)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-poster-teal text-white"
+          >
+            <span className="font-bold text-sm tracking-tight">Live Quiz · Teacher</span>
+            {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
 
-        {!collapsed && (
-          <div className="p-4 space-y-3 max-h-[50vh] overflow-y-auto">
-            {!session ? (
-              <button
-                onClick={createSession}
-                disabled={creating}
-                className="w-full py-3 rounded-full bg-poster-teal text-white font-bold text-base hover:bg-poster-teal/90 disabled:opacity-50 transition-colors"
-              >
-                {creating ? "Creating…" : "Start Session"}
-              </button>
-            ) : (
-              <>
-                {/* Participants */}
-                <div>
-                  <div className="text-[10px] uppercase tracking-widest text-poster-ink/40 font-semibold mb-2">
-                    Joined ({participants.size})
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {[...participants.values()].map((p, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-1 bg-poster-yellow/20 rounded-full px-2 py-1 text-xs font-medium text-poster-ink"
-                      >
-                        <img src={avatarSrc(p.avatar)} alt="" className="w-4 h-4" />
-                        <span>{p.name}</span>
-                      </div>
-                    ))}
-                    {participants.size === 0 && (
-                      <div className="text-xs text-poster-ink/30 italic">No students yet</div>
-                    )}
-                  </div>
-                </div>
-
-                {session.phase === "lobby" && (
-                  <button
-                    onClick={startQuiz}
-                    disabled={participants.size === 0}
-                    className="w-full py-3 rounded-full bg-poster-teal text-white font-bold flex items-center justify-center gap-2 hover:bg-poster-teal/90 disabled:opacity-40 transition-colors"
-                  >
-                    <Play size={16} /> Start
-                  </button>
-                )}
-
-                {session.phase === "active" && (
-                  <div className="space-y-2">
-                    <div className="text-xs text-poster-ink/40 text-center">
-                      {answeredThisQ} / {participants.size} answered
-                    </div>
-                    <button
-                      onClick={nextQuestion}
-                      className="w-full py-3 rounded-full bg-poster-yellow text-white font-bold flex items-center justify-center gap-2 hover:bg-poster-yellow/90 transition-colors"
-                    >
-                      <SkipForward size={16} />
-                      {session.current_question_index + 1 >= session.questions.length ? "End → Results" : "Next →"}
-                    </button>
-                  </div>
-                )}
-
-                {(session.phase === "results" || session.phase === "ended") && (
-                  <div className="text-center text-sm font-semibold text-poster-ink/60 py-1">
-                    {session.phase === "results" ? "Showing results to students" : "Session ended"}
-                  </div>
-                )}
-
+          {!collapsed && (
+            <div className="p-4 space-y-3 max-h-[40vh] overflow-y-auto">
+              {!session ? (
                 <button
-                  onClick={resetSession}
-                  className="w-full py-2 text-xs text-poster-ink/30 hover:text-poster-ink/60 flex items-center justify-center gap-1.5 transition-colors"
+                  onClick={createSession}
+                  disabled={creating}
+                  className="w-full py-3 rounded-full bg-poster-teal text-white font-bold text-base hover:bg-poster-teal/90 disabled:opacity-50 transition-colors"
                 >
-                  <RotateCcw size={13} /> End / Reset
+                  {creating ? "Creating…" : "Start Session"}
                 </button>
-              </>
-            )}
-          </div>
-        )}
+              ) : (
+                <>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-widest text-poster-ink/40 font-semibold mb-2">
+                      Joined ({participants.size})
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[...participants.values()].map((p, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center gap-1 bg-poster-yellow/20 rounded-full px-2 py-1 text-xs font-medium text-poster-ink"
+                        >
+                          <img src={avatarSrc(p.avatar)} alt="" className="w-4 h-4" />
+                          <span>{p.name}</span>
+                        </div>
+                      ))}
+                      {participants.size === 0 && (
+                        <div className="text-xs text-poster-ink/30 italic">No students yet</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {session.phase === "lobby" && (
+                    <button
+                      onClick={startQuiz}
+                      disabled={participants.size === 0}
+                      className="w-full py-3 rounded-full bg-poster-teal text-white font-bold flex items-center justify-center gap-2 hover:bg-poster-teal/90 disabled:opacity-40 transition-colors"
+                    >
+                      <Play size={16} /> Start
+                    </button>
+                  )}
+
+                  {session.phase === "active" && (
+                    <div className="space-y-2">
+                      <div className="text-xs text-poster-ink/40 text-center">
+                        {answeredThisQ} / {participants.size} answered
+                      </div>
+                      <button
+                        onClick={nextQuestion}
+                        className="w-full py-3 rounded-full bg-poster-yellow text-white font-bold flex items-center justify-center gap-2 hover:bg-poster-yellow/90 transition-colors"
+                      >
+                        <SkipForward size={16} />
+                        {session.current_question_index + 1 >= session.questions.length ? "End → Results" : "Next →"}
+                      </button>
+                    </div>
+                  )}
+
+                  {(session.phase === "results" || session.phase === "ended") && (
+                    <div className="text-center text-sm font-semibold text-poster-ink/60 py-1">
+                      {session.phase === "results" ? "Showing results to students" : "Session ended"}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={resetSession}
+                    className="w-full py-2 text-xs text-poster-ink/30 hover:text-poster-ink/60 flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <RotateCcw size={13} /> End / Reset
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </>
   );

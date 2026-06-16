@@ -34,6 +34,16 @@ export const PILL_LABEL: Record<string, string> = {
   "dat-einem": "einem", "dat-einer": "einer", "dat-einem2": "einem", "dat-noneN": "—",
 };
 
+/** Every pill ID on the cheatsheet, across all cases and row types. */
+export const ALL_PILLS: string[] = [
+  ...PRONOUN_PILLS.nom, ...PRONOUN_PILLS.akk, ...PRONOUN_PILLS.dat,
+  ...ARTICLE_PILLS.nom, ...ARTICLE_PILLS.akk, ...ARTICLE_PILLS.dat,
+];
+
+const PRONOUN_ID_SET = new Set<string>([
+  ...PRONOUN_PILLS.nom, ...PRONOUN_PILLS.akk, ...PRONOUN_PILLS.dat,
+]);
+
 /** Get pill options for a given question (correct + distractors). */
 export function pillsForQuestion(q: QuizQuestion): string[] {
   const set = q.kind === "pronoun" ? PRONOUN_PILLS[q.prep.case] : ARTICLE_PILLS[q.prep.case];
@@ -56,10 +66,34 @@ function seededShuffle<T>(arr: T[], seed: number): T[] {
 /** Elimination order — most obviously wrong first, confusable last. */
 export function eliminationOrder(q: QuizQuestion, pills: string[]): string[] {
   const wrong = pills.filter((p) => p !== q.correctPillId);
-  // Confusability: same case-form letter cluster keeps until end. Simple heuristic:
-  // articles → those with similar ending stay last; pronouns → similar letter prefix last.
   const correct = q.correctPillId;
   return wrong.sort((a, b) => similarity(a, correct) - similarity(b, correct));
+}
+
+/**
+ * Full-cheatsheet elimination order — spans all pills across all cases.
+ * Tier 1 (eliminated first): wrong row type (articles when answer is pronoun, vice versa)
+ * Tier 2: same row type, wrong case
+ * Tier 3: same row type, same case (direct competitors, eliminated last)
+ * Within each tier, least label-similar to correct answer goes first.
+ */
+export function eliminationOrderFull(q: QuizQuestion): string[] {
+  const correct = q.correctPillId;
+  const correctCase = correct.split("-")[0] as CaseKey;
+  const correctIsPronoun = PRONOUN_ID_SET.has(correct);
+
+  const wrong = ALL_PILLS.filter((p) => p !== correct);
+  return wrong.sort((a, b) => confusability(a) - confusability(b));
+
+  function confusability(pill: string): number {
+    const pillCase = pill.split("-")[0] as CaseKey;
+    const pillIsPronoun = PRONOUN_ID_SET.has(pill);
+    const sim = similarity(pill, correct);
+    // Tier offsets: 0 = wrong type, 100 = wrong case, 200 = same case
+    if (pillIsPronoun !== correctIsPronoun) return 0 + sim;
+    if (pillCase !== correctCase) return 100 + sim;
+    return 200 + sim;
+  }
 }
 
 function similarity(a: string, b: string): number {

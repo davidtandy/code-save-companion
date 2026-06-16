@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { useLiveQuiz } from "./LiveQuizProvider";
 import { avatarSrc } from "./avatars";
 import type { StudentIdentity } from "./StudentLobby";
-import { pillsForQuestion, eliminationOrder } from "./scoring";
+import { eliminationOrderFull } from "./scoring";
 import { useServerFn } from "@tanstack/react-start";
 import { submitResponse } from "@/lib/livequiz.functions";
 
@@ -79,8 +79,8 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit }: Props) {
     : 0;
   const cappedElimCount = q
     ? Math.min(
-        Math.floor(elimProgress * eliminationOrder(q, pillsForQuestion(q)).length),
-        Math.max(0, eliminationOrder(q, pillsForQuestion(q)).length - 1),
+        Math.floor(elimProgress * eliminationOrderFull(q).length),
+        Math.max(0, eliminationOrderFull(q).length - 1),
       )
     : 0;
 
@@ -89,7 +89,7 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit }: Props) {
       document.querySelectorAll("[data-quiz-elim]").forEach((el) => el.removeAttribute("data-quiz-elim"));
     clear();
     if (!q || session?.phase !== "active" || cappedElimCount === 0) return clear;
-    const order = eliminationOrder(q, pillsForQuestion(q));
+    const order = eliminationOrderFull(q);
     order.slice(0, cappedElimCount).forEach((pillId) => {
       document.querySelectorAll(`[data-cell-id="${pillId}"]`).forEach((el) =>
         (el as HTMLElement).setAttribute("data-quiz-elim", "1"),
