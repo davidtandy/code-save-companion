@@ -35,8 +35,9 @@ import bicycle from "@/assets/poster/bicycle.svg";
 import seinCloud from "@/assets/poster/chef-hat.svg";
 import envelope from "@/assets/poster/envelope.svg";
 import { StudentLobby, type StudentIdentity } from "@/components/livequiz/StudentLobby";
-import { StudentQuiz } from "@/components/livequiz/StudentQuiz";
 import { TeacherPanel } from "@/components/livequiz/TeacherPanel";
+import { LiveStudentOverlay } from "@/components/livequiz/LiveStudentOverlay";
+import { LiveQuizProvider } from "@/components/livequiz/LiveQuizProvider";
 
 function getLiveMode(): "student" | "teacher" | null {
   if (typeof window === "undefined") return null;
@@ -107,18 +108,25 @@ const Index = () => {
     return null;
   });
 
-  if (liveMode === "student") {
-    if (!studentIdentity) return <StudentLobby onJoined={setStudentIdentity} />;
-    return <StudentQuiz identity={studentIdentity} onLeave={() => {
-      try { localStorage.removeItem("livequiz_student"); } catch {}
-      setStudentIdentity(null);
-    }} />;
+  if (liveMode === "student" && !studentIdentity) {
+    return <StudentLobby onJoined={setStudentIdentity} />;
   }
 
-  return <Cheatsheet liveTeacher={liveMode === "teacher"} />;
+  return <Cheatsheet
+    liveTeacher={liveMode === "teacher"}
+    liveStudent={liveMode === "student" ? studentIdentity : null}
+    onLiveLeave={liveMode === "student" ? () => {
+      try { localStorage.removeItem("livequiz_student"); } catch {}
+      setStudentIdentity(null);
+    } : undefined}
+  />;
 };
 
-const Cheatsheet = ({ liveTeacher }: { liveTeacher: boolean }) => {
+const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
+  liveTeacher: boolean;
+  liveStudent?: StudentIdentity | null;
+  onLiveLeave?: () => void;
+}) => {
   const [genderOn, setGenderOn] = useState(false);
   const [caseColorOn, setCaseColorOn] = useState(true);
   const [caseColorMode, setCaseColorMode] = useState<CaseColorMode>("tokens");
@@ -192,6 +200,7 @@ const Cheatsheet = ({ liveTeacher }: { liveTeacher: boolean }) => {
 
   const posterRef = useRef<PosterHandle>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const liveQuizSubmit = useRef<((pillId: string) => void) | null>(null);
 
   /** Flourish state: bumped each time we want a re-cascade. */
   const [flourishEpoch, setFlourishEpoch] = useState(0);
@@ -444,6 +453,10 @@ const Cheatsheet = ({ liveTeacher }: { liveTeacher: boolean }) => {
 
   /** Quiz-aware word tap — shared by landscape Poster and portrait carousel. */
   const handlePosterTapWord = (id: string) => {
+    if (liveQuizSubmit.current) {
+      liveQuizSubmit.current(id);
+      return;
+    }
     if (gameMode === "article-mutation") {
       articleMutationRef.current?.onPillTap(id);
       return;
@@ -868,16 +881,23 @@ const Cheatsheet = ({ liveTeacher }: { liveTeacher: boolean }) => {
     return { caseRect, groupRect, wordRect, subRect };
   })();
 
-  return (
+  const mainContent = (
     <>
     {liveTeacher && <TeacherPanel />}
-    {showWelcome && (
+    {liveStudent && (
+      <LiveStudentOverlay
+        identity={liveStudent}
+        onLeave={onLiveLeave ?? (() => {})}
+        onSetSubmit={(fn) => { liveQuizSubmit.current = fn; }}
+      />
+    )}
+    {!liveStudent && showWelcome && (
       <WelcomeModal onDismiss={() => dismissWelcome(false)} onTour={() => dismissWelcome(true)} isMobile={isPortraitMobile} />
     )}
-    {showCursorDemo && (
+    {!liveStudent && showCursorDemo && (
       <CursorDemo isMobile={isPortraitMobile} onDone={() => setShowCursorDemo(false)} onReset={goOverview} />
     )}
-    {showIntroStage && (
+    {!liveStudent && showIntroStage && (
       <IntroStage onComplete={() => {
         try { localStorage.setItem("introStageSeen", "1"); } catch { /* noop */ }
         setShowIntroStage(false);
@@ -1272,6 +1292,12 @@ const Cheatsheet = ({ liveTeacher }: { liveTeacher: boolean }) => {
     </main>
     </>
   );
+
+  return liveStudent ? (
+    <LiveQuizProvider code={liveStudent.session_code} studentId={liveStudent.student_id}>
+      {mainContent}
+    </LiveQuizProvider>
+  ) : mainContent;
 };
 
 export default Index;
