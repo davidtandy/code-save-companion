@@ -175,9 +175,9 @@ const Pill = ({
   const genderCls = genderClasses(id, showGender);
   const subs = word?.subWords;
 
-  // Quiz mode: split multi-subword pills into separate pill buttons so each
-  // sub-token (ihn / sie / es, etc.) is independently tappable.
-  if (quizActive && subs && id && !morph) {
+  // Pronoun pills with multiple forms (er/sie/es, ihn/sie/es, etc.) always render
+  // as separate tappable buttons. Possessives (sein/ihr/sein) are excluded.
+  if (subs && id && !morph && word?.type === "pronoun") {
     return (
       <div className={cn("flex gap-1 items-stretch", className)}>
         {subs.map((sw, i) => {
