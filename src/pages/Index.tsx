@@ -870,6 +870,7 @@ const Cheatsheet = ({ liveTeacher }: { liveTeacher: boolean }) => {
 
   return (
     <>
+    {liveTeacher && <TeacherPanel />}
     {showWelcome && (
       <WelcomeModal onDismiss={() => dismissWelcome(false)} onTour={() => dismissWelcome(true)} isMobile={isPortraitMobile} />
     )}
