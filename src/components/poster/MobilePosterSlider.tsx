@@ -762,8 +762,6 @@ export function MobilePosterSlider({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col relative overflow-hidden bg-poster-bg">
-      <TunerPanel tune={tune} onChange={setTuneKey} />
-      <ExperienceTuner tune={tune} onChange={setTuneKey} />
 
       {/* Stage */}
       <div
