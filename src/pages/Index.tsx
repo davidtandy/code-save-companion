@@ -34,6 +34,17 @@ import { IntroStage } from "@/components/IntroStage";
 import bicycle from "@/assets/poster/bicycle.svg";
 import seinCloud from "@/assets/poster/chef-hat.svg";
 import envelope from "@/assets/poster/envelope.svg";
+import { StudentLobby, type StudentIdentity } from "@/components/livequiz/StudentLobby";
+import { StudentQuiz } from "@/components/livequiz/StudentQuiz";
+import { TeacherPanel } from "@/components/livequiz/TeacherPanel";
+
+function getLiveMode(): "student" | "teacher" | null {
+  if (typeof window === "undefined") return null;
+  const p = new URLSearchParams(window.location.search);
+  if (p.has("livequizteacher")) return "teacher";
+  if (p.has("livequiz")) return "student";
+  return null;
+}
 
 type Level = 0 | 1 | 2 | 3 | 4;
 
