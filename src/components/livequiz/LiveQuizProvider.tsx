@@ -1,8 +1,8 @@
 // @ts-nocheck
-// Polls public session + student state via server fns. No realtime, no direct DB access.
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+// Polls session by ID + student state via server fns. No realtime, no direct DB access.
+import { createContext, useContext, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getPublicSession, getStudentState } from "@/lib/livequiz.functions";
+import { getSessionById, getStudentState } from "@/lib/livequiz.functions";
 import type { QuizQuestion } from "@/components/poster/quiz/quizData";
 
 export type SessionPhase = "lobby" | "active" | "results" | "ended";
@@ -36,11 +36,11 @@ const LiveQuizContext = createContext<Ctx>({
 export function useLiveQuiz() { return useContext(LiveQuizContext); }
 
 export function LiveQuizProvider({
-  code,
+  sessionId,
   studentId,
   children,
 }: {
-  code: string;
+  sessionId: string;
   studentId: string;
   children: React.ReactNode;
 }) {
@@ -51,15 +51,15 @@ export function LiveQuizProvider({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const lookupFn = useServerFn(getPublicSession);
-  const stateFn = useServerFn(getStudentState);
+  const sessionFn = useServerFn(getSessionById);
+  const stateFn   = useServerFn(getStudentState);
 
-  // Poll session by code every 1s
+  // Poll session by ID every 1s
   useEffect(() => {
     let cancelled = false;
     async function tick() {
       try {
-        const s = await lookupFn({ data: { code } });
+        const s = await sessionFn({ data: { sessionId } });
         if (cancelled) return;
         if (!s) { setError("Session not found"); setLoading(false); return; }
         setSession(s as LiveSession);
@@ -72,9 +72,9 @@ export function LiveQuizProvider({
     tick();
     const iv = setInterval(tick, 1000);
     return () => { cancelled = true; clearInterval(iv); };
-  }, [code]);
+  }, [sessionId]);
 
-  // Poll student state every 2s (only when we have a session id)
+  // Poll student state every 2s
   useEffect(() => {
     if (!session?.id) return;
     let cancelled = false;

@@ -191,6 +191,35 @@ export const submitResponse = createServerFn({ method: "POST" })
     return { is_correct: correct, points };
   });
 
+// ---------- Public: get latest non-ended session (no code needed) ----------
+export const getLatestActiveSession = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const sb = await admin();
+    const { data: row, error } = await sb
+      .from("quiz_session")
+      .select("id, code, phase, current_question_index, question_started_at, timer_max_seconds, questions, game_mode")
+      .neq("phase", "ended")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+// ---------- Public: get session by ID (student polling after join) ----------
+export const getSessionById = createServerFn({ method: "GET" })
+  .inputValidator((d: { sessionId: string }) => d)
+  .handler(async ({ data }) => {
+    const sb = await admin();
+    const { data: row, error } = await sb
+      .from("quiz_session")
+      .select("id, code, phase, current_question_index, question_started_at, timer_max_seconds, questions, game_mode")
+      .eq("id", data.sessionId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
 // ---------- Student: poll my own responses + leaderboard summary ----------
 export const getStudentState = createServerFn({ method: "POST" })
   .inputValidator((d: { sessionId: string; studentId: string }) => d)

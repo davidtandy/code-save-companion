@@ -102,8 +102,7 @@ const Index = () => {
       const raw = localStorage.getItem("livequiz_student");
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      const code = new URLSearchParams(window.location.search).get("code")?.toUpperCase();
-      if (parsed?.session_code && code && parsed.session_code === code) return parsed;
+      if (parsed?.session_id && parsed?.student_id) return parsed;
     } catch {}
     return null;
   });
@@ -120,6 +119,7 @@ const Index = () => {
       setStudentIdentity(null);
     } : undefined}
   />;
+
 };
 
 const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
@@ -1294,7 +1294,7 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
   );
 
   return liveStudent ? (
-    <LiveQuizProvider code={liveStudent.session_code} studentId={liveStudent.student_id}>
+    <LiveQuizProvider sessionId={liveStudent.session_id} studentId={liveStudent.student_id}>
       {mainContent}
     </LiveQuizProvider>
   ) : mainContent;

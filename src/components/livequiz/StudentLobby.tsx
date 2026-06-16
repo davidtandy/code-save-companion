@@ -1,9 +1,9 @@
 // @ts-nocheck
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AVATARS } from "./avatars";
 import { useServerFn } from "@tanstack/react-start";
-import { getPublicSession, joinSession } from "@/lib/livequiz.functions";
+import { getLatestActiveSession, joinSession } from "@/lib/livequiz.functions";
 
 const STORAGE_KEY = "livequiz_student";
 
@@ -12,7 +12,6 @@ export type StudentIdentity = {
   student_name: string;
   student_avatar: string;
   session_id: string;
-  session_code: string;
 };
 
 function getOrCreateStudentId(): string {
@@ -30,48 +29,57 @@ type Props = {
 };
 
 export function StudentLobby({ onJoined }: Props) {
-  const initialCode = useMemo(() => {
-    const u = new URL(window.location.href);
-    return (u.searchParams.get("code") ?? "").toUpperCase();
-  }, []);
-  const [code, setCode] = useState(initialCode);
+  const [session, setSession] = useState<{ id: string } | null>(null);
+  const [polling, setPolling] = useState(true);
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<string>(AVATARS[0].key);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const lookupFn = useServerFn(getPublicSession);
+  const lookupFn = useServerFn(getLatestActiveSession);
   const joinFn   = useServerFn(joinSession);
 
+  // Restore name/avatar from last session
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
       const prev = JSON.parse(raw);
-      if (prev?.session_code === code) {
-        setName(prev.student_name ?? "");
-        setAvatar(prev.student_avatar ?? AVATARS[0].key);
-      }
+      if (prev?.student_name) setName(prev.student_name);
+      if (prev?.student_avatar) setAvatar(prev.student_avatar);
     } catch {}
-  }, [code]);
+  }, []);
+
+  // Poll for an active session every 2s until found
+  useEffect(() => {
+    let cancelled = false;
+    async function tick() {
+      try {
+        const s = await lookupFn({});
+        if (cancelled) return;
+        if (s) { setSession(s as any); setPolling(false); }
+      } catch {}
+    }
+    tick();
+    const iv = setInterval(tick, 2000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, []);
 
   async function handleJoin() {
     setError(null);
-    if (!code.trim() || !name.trim()) { setError("Enter a code and your name."); return; }
+    if (!name.trim()) { setError("Enter your name first."); return; }
+    if (!session) { setError("No active session found yet."); return; }
     setBusy(true);
     try {
-      const sess = await lookupFn({ data: { code: code.trim().toUpperCase() } });
-      if (!sess) { setError("Session not found."); setBusy(false); return; }
       const student_id = getOrCreateStudentId();
       const identity: StudentIdentity = {
         student_id,
         student_name: name.trim(),
         student_avatar: avatar,
-        session_id: (sess as any).id,
-        session_code: (sess as any).code,
+        session_id: session.id,
       };
       await joinFn({ data: {
-        sessionId: identity.session_id,
+        sessionId: session.id,
         studentId: student_id,
         studentName: identity.student_name,
         studentAvatar: identity.student_avatar,
@@ -95,19 +103,15 @@ export function StudentLobby({ onJoined }: Props) {
           <div className="text-poster-ink/50 text-base font-medium">Live Quiz</div>
         </div>
 
-        {/* Session code — only show if not pre-filled from QR */}
-        {!initialCode && (
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-widest text-poster-ink/40 font-semibold px-1">Session code</div>
-            <input
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="ABC123"
-              maxLength={6}
-              className="w-full py-4 px-6 rounded-full bg-white/80 border border-poster-ink/10 text-poster-ink font-bold text-2xl text-center tracking-widest placeholder:text-poster-ink/20 outline-none focus:ring-2 focus:ring-poster-teal/30"
-            />
-          </div>
-        )}
+        {/* Session status */}
+        <div className={cn(
+          "text-center text-sm font-medium py-2 px-4 rounded-full",
+          session
+            ? "bg-poster-teal/15 text-poster-teal"
+            : "bg-poster-ink/5 text-poster-ink/40",
+        )}>
+          {session ? "Session found — enter your name below" : "Waiting for teacher to start a session…"}
+        </div>
 
         {/* Name */}
         <div className="space-y-2">
@@ -115,6 +119,7 @@ export function StudentLobby({ onJoined }: Props) {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleJoin()}
             placeholder="Type your name"
             maxLength={20}
             autoFocus
@@ -150,8 +155,8 @@ export function StudentLobby({ onJoined }: Props) {
         {/* Join */}
         <button
           onClick={handleJoin}
-          disabled={busy}
-          className="w-full py-4 rounded-full bg-poster-teal text-white font-bold text-lg hover:bg-poster-teal/90 active:bg-poster-teal/80 transition-colors disabled:opacity-50"
+          disabled={busy || !session}
+          className="w-full py-4 rounded-full bg-poster-teal text-white font-bold text-lg hover:bg-poster-teal/90 active:bg-poster-teal/80 transition-colors disabled:opacity-40"
         >
           {busy ? "Joining…" : "Join →"}
         </button>

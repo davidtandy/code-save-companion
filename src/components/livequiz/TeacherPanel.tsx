@@ -13,7 +13,12 @@ import {
   listResponses,
 } from "@/lib/livequiz.functions";
 
-const FIXED_CODE = "GENAU";
+function makeCode(): string {
+  const ch = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for (let i = 0; i < 8; i++) s += ch[Math.floor(Math.random() * ch.length)];
+  return s;
+}
 
 type Session = {
   id: string;
@@ -77,7 +82,7 @@ export function TeacherPanel() {
     setCreating(true);
     try {
       const row = await createFn({
-        data: { code: FIXED_CODE, gameMode: "prep-lock", questions: sampleQuestions(10), timerMaxSeconds: 30 },
+        data: { code: makeCode(), gameMode: "prep-lock", questions: sampleQuestions(10), timerMaxSeconds: 30 },
       });
       setSession(row as Session);
       try {
@@ -119,7 +124,7 @@ export function TeacherPanel() {
     setResponses([]);
   }
 
-  const joinUrl = `${window.location.origin}/?livequiz&code=${FIXED_CODE}`;
+  const joinUrl = `${window.location.origin}/?livequiz`;
 
   // Timer for elimination animation
   const [now, setNow] = useState(Date.now());
@@ -205,8 +210,8 @@ export function TeacherPanel() {
         <div className="bg-white rounded-2xl p-3 shadow-lg border border-poster-ink/10">
           <QRCode value={joinUrl} size={192} level="M" />
         </div>
-        <div className="text-xs font-mono font-bold text-poster-ink/40 tracking-widest">
-          {FIXED_CODE}
+        <div className="text-[10px] text-poster-ink/30 tracking-wide">
+          {joinUrl}
         </div>
       </div>
 
