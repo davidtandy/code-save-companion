@@ -72,28 +72,77 @@ export function eliminationOrder(q: QuizQuestion, pills: string[]): string[] {
 
 /**
  * Full-cheatsheet elimination order — spans all pills across all cases.
- * Tier 1 (eliminated first): wrong row type (articles when answer is pronoun, vice versa)
- * Tier 2: same row type, wrong case
- * Tier 3: same row type, same case (direct competitors, eliminated last)
+ * Tier 0 (eliminated first): wrong row type (articles when answer is pronoun, vice versa)
+ * Tier 1: same row type, wrong case
+ * Tier 2: same row type, same case (direct competitors, eliminated last)
  * Within each tier, least label-similar to correct answer goes first.
  */
 export function eliminationOrderFull(q: QuizQuestion): string[] {
+  return eliminationTiersData(q).order;
+}
+
+/** Absolute-time group thresholds for elimination phases. */
+export const ELIM_T1_MS = 2000; // wrong-type group greys at 2s
+export const ELIM_T2_MS = 4000; // wrong-case group greys at 4s
+export const ELIM_T3_MS = 6000; // individual same-case pills start at 6s
+
+/**
+ * Returns the elimination order split into three tiers plus tier sizes.
+ * Tier 0: wrong type. Tier 1: same type, wrong case. Tier 2: same type, same case.
+ */
+export function eliminationTiersData(q: QuizQuestion): {
+  order: string[];
+  tier0Count: number;
+  tier1Count: number;
+  tier2Count: number;
+} {
   const correct = q.correctPillId;
   const correctCase = correct.split("-")[0] as CaseKey;
   const correctIsPronoun = PRONOUN_ID_SET.has(correct);
 
   const wrong = ALL_PILLS.filter((p) => p !== correct);
-  return wrong.sort((a, b) => confusability(a) - confusability(b));
+
+  let tier0Count = 0, tier1Count = 0;
+  for (const pill of wrong) {
+    const pillCase = pill.split("-")[0] as CaseKey;
+    const pillIsPronoun = PRONOUN_ID_SET.has(pill);
+    if (pillIsPronoun !== correctIsPronoun) tier0Count++;
+    else if (pillCase !== correctCase) tier1Count++;
+  }
+  const tier2Count = wrong.length - tier0Count - tier1Count;
+
+  const order = [...wrong].sort((a, b) => confusability(a) - confusability(b));
 
   function confusability(pill: string): number {
     const pillCase = pill.split("-")[0] as CaseKey;
     const pillIsPronoun = PRONOUN_ID_SET.has(pill);
     const sim = similarity(pill, correct);
-    // Tier offsets: 0 = wrong type, 100 = wrong case, 200 = same case
     if (pillIsPronoun !== correctIsPronoun) return 0 + sim;
     if (pillCase !== correctCase) return 100 + sim;
     return 200 + sim;
   }
+
+  return { order, tier0Count, tier1Count, tier2Count };
+}
+
+/**
+ * Given elapsed time, returns how many pills should currently be greyed.
+ * Groups 0 and 1 grey all at once at t=2s and t=4s.
+ * Group 2 pills grey one-by-one from t=6s, evenly spaced to timer end.
+ */
+export function computeElimCount(
+  elapsedMs: number,
+  timerMaxMs: number,
+  tier0Count: number,
+  tier1Count: number,
+  tier2Count: number,
+): number {
+  if (elapsedMs < ELIM_T1_MS) return 0;
+  if (elapsedMs < ELIM_T2_MS) return tier0Count;
+  if (elapsedMs < ELIM_T3_MS) return tier0Count + tier1Count;
+  const availableMs = Math.max(1, timerMaxMs - ELIM_T3_MS);
+  const progress = Math.min(1, (elapsedMs - ELIM_T3_MS) / availableMs);
+  return tier0Count + tier1Count + Math.floor(progress * tier2Count);
 }
 
 function similarity(a: string, b: string): number {

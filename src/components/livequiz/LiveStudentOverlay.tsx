@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { useLiveQuiz } from "./LiveQuizProvider";
 import { avatarSrc } from "./avatars";
 import type { StudentIdentity } from "./StudentLobby";
-import { eliminationOrderFull } from "./scoring";
+import { eliminationTiersData, computeElimCount } from "./scoring";
 import { useServerFn } from "@tanstack/react-start";
 import { submitResponse } from "@/lib/livequiz.functions";
 
@@ -86,26 +86,18 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit }: Props) {
     return () => onSetSubmit(null);
   }, [session?.phase, locked, idx]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Progressively grey out wrong pills on the cheatsheet as the timer runs down.
-  const elimStart = timerMaxMs * 0.3;
-  const elimEnd   = timerMaxMs * 0.95;
-  const elimProgress = (session?.phase === "active" && !locked)
-    ? Math.min(1, Math.max(0, (elapsed - elimStart) / (elimEnd - elimStart)))
-    : 0;
-  const cappedElimCount = q
-    ? Math.min(
-        Math.floor(elimProgress * eliminationOrderFull(q).length),
-        Math.max(0, eliminationOrderFull(q).length - 1),
-      )
+  // Progressively grey out wrong pills: groups at t=2s and t=4s, then individual pills from t=6s.
+  const tiers = q ? eliminationTiersData(q) : null;
+  const cappedElimCount = (session?.phase === "active" && !locked && tiers)
+    ? computeElimCount(elapsed, timerMaxMs, tiers.tier0Count, tiers.tier1Count, tiers.tier2Count)
     : 0;
 
   useEffect(() => {
     const clear = () =>
       document.querySelectorAll("[data-quiz-elim]").forEach((el) => el.removeAttribute("data-quiz-elim"));
     clear();
-    if (!q || session?.phase !== "active" || cappedElimCount === 0) return clear;
-    const order = eliminationOrderFull(q);
-    order.slice(0, cappedElimCount).forEach((pillId) => {
+    if (!tiers || session?.phase !== "active" || cappedElimCount === 0) return clear;
+    tiers.order.slice(0, cappedElimCount).forEach((pillId) => {
       document.querySelectorAll(`[data-cell-id="${pillId}"]`).forEach((el) =>
         (el as HTMLElement).setAttribute("data-quiz-elim", "1"),
       );

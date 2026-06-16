@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import QRCode from "react-qr-code";
 import { avatarSrc } from "./avatars";
-import { sampleQuestions, PILL_LABEL, eliminationOrderFull } from "./scoring";
+import { sampleQuestions, PILL_LABEL, eliminationTiersData, computeElimCount } from "./scoring";
 import { Play, SkipForward, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -148,25 +148,17 @@ export function TeacherPanel() {
     : Date.now();
   const timerMaxMs = (session?.timer_max_seconds || 30) * 1000;
   const elapsed = Math.max(0, now - startedAt);
-  const elimStart = timerMaxMs * 0.3;
-  const elimEnd   = timerMaxMs * 0.95;
-  const elimProgress = session?.phase === "active"
-    ? Math.min(1, Math.max(0, (elapsed - elimStart) / (elimEnd - elimStart)))
-    : 0;
-  const cappedElimCount = activeQ
-    ? Math.min(
-        Math.floor(elimProgress * eliminationOrderFull(activeQ).length),
-        Math.max(0, eliminationOrderFull(activeQ).length - 1),
-      )
+  const activeTiers = activeQ ? eliminationTiersData(activeQ) : null;
+  const cappedElimCount = (session?.phase === "active" && activeTiers)
+    ? computeElimCount(elapsed, timerMaxMs, activeTiers.tier0Count, activeTiers.tier1Count, activeTiers.tier2Count)
     : 0;
 
   useEffect(() => {
     const clear = () =>
       document.querySelectorAll("[data-quiz-elim]").forEach((el) => el.removeAttribute("data-quiz-elim"));
     clear();
-    if (!activeQ || session?.phase !== "active" || cappedElimCount === 0) return clear;
-    const order = eliminationOrderFull(activeQ);
-    order.slice(0, cappedElimCount).forEach((pillId) => {
+    if (!activeTiers || session?.phase !== "active" || cappedElimCount === 0) return clear;
+    activeTiers.order.slice(0, cappedElimCount).forEach((pillId) => {
       document.querySelectorAll(`[data-cell-id="${pillId}"]`).forEach((el) =>
         (el as HTMLElement).setAttribute("data-quiz-elim", "1"),
       );
