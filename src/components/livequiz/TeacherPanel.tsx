@@ -190,17 +190,18 @@ export function TeacherPanel() {
 
   return (
     <>
-      {/* ── Left teacher panel: QR → question → controls ── */}
-      <div className="fixed left-0 top-[52px] bottom-0 w-80 z-50 flex flex-col p-4 gap-3 pointer-events-none">
-
-        {/* QR card */}
-        <div className="pointer-events-auto flex flex-col items-center gap-2 bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-poster-ink/10">
-          <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold">
-            Scan to join the quiz!
-          </div>
-          <QRCode value={joinUrl} size={192} level="M" />
-          <div className="text-[9px] text-poster-ink/30 tracking-wide">{joinUrl}</div>
+      {/* ── QR — fixed top-right ── */}
+      <div className="fixed top-[52px] right-4 z-50 flex flex-col items-center gap-1.5">
+        <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold text-center">
+          Scan to join!
         </div>
+        <div className="bg-white rounded-xl p-2 shadow-lg border border-poster-ink/10">
+          <QRCode value={joinUrl} size={96} level="M" />
+        </div>
+      </div>
+
+      {/* ── Left teacher panel: question → controls ── */}
+      <div className="fixed left-0 top-[52px] bottom-0 w-80 z-50 flex flex-col p-4 gap-3 pointer-events-none">
 
         {/* Question text — floats over cheatsheet, grows to fill space */}
         <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 px-2">
