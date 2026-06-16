@@ -19,7 +19,7 @@ export function CursorDemo({ isMobile, onDone, onReset }: Props) {
   const pills = isMobile ? MOBILE_PILLS : DESKTOP_PILLS;
   const totalMs = PILL_START + pills.length * PILL_CYCLE + EXIT_DONE;
 
-  const [pos, setPos]               = useState({ x: window.innerWidth / 2, y: window.innerHeight + 90 });
+  const [pos, setPos]               = useState(() => typeof window !== "undefined" ? { x: window.innerWidth / 2, y: window.innerHeight + 90 } : { x: 0, y: 0 });
   const [visible, setVisible]       = useState(false);
   const [pressing, setPressing]     = useState(false);
   const [rippleKey, setRippleKey]   = useState(0);
