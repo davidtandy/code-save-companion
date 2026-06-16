@@ -1,8 +1,5 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { AVATARS } from "./avatars";
 import { useServerFn } from "@tanstack/react-start";
@@ -44,7 +41,7 @@ export function StudentLobby({ onJoined }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const lookupFn = useServerFn(getPublicSession);
-  const joinFn = useServerFn(joinSession);
+  const joinFn   = useServerFn(joinSession);
 
   useEffect(() => {
     try {
@@ -62,11 +59,9 @@ export function StudentLobby({ onJoined }: Props) {
     setError(null);
     if (!code.trim() || !name.trim()) { setError("Enter a code and your name."); return; }
     setBusy(true);
-
     try {
       const sess = await lookupFn({ data: { code: code.trim().toUpperCase() } });
       if (!sess) { setError("Session not found."); setBusy(false); return; }
-
       const student_id = getOrCreateStudentId();
       const identity: StudentIdentity = {
         student_id,
@@ -75,14 +70,12 @@ export function StudentLobby({ onJoined }: Props) {
         session_id: (sess as any).id,
         session_code: (sess as any).code,
       };
-
       await joinFn({ data: {
         sessionId: identity.session_id,
         studentId: student_id,
         studentName: identity.student_name,
         studentAvatar: identity.student_avatar,
       }});
-
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(identity)); } catch {}
       onJoined(identity);
     } catch (e: any) {
@@ -93,59 +86,76 @@ export function StudentLobby({ onJoined }: Props) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold mb-2">Live Quiz</h1>
-          <p className="text-muted-foreground">Join your class</p>
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-poster-bg">
+      <div className="w-full max-w-sm space-y-8">
+
+        {/* Header */}
+        <div className="text-center space-y-1">
+          <div className="text-5xl font-bold text-poster-ink tracking-tight">genau.</div>
+          <div className="text-poster-ink/50 text-base font-medium">Live Quiz</div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="code">Session code</Label>
-          <Input
-            id="code"
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="ABC123"
-            maxLength={6}
-            className="text-center text-2xl tracking-widest font-mono uppercase"
-          />
-        </div>
+        {/* Session code — only show if not pre-filled from QR */}
+        {!initialCode && (
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-widest text-poster-ink/40 font-semibold px-1">Session code</div>
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="ABC123"
+              maxLength={6}
+              className="w-full py-4 px-6 rounded-full bg-white/80 border border-poster-ink/10 text-poster-ink font-bold text-2xl text-center tracking-widest placeholder:text-poster-ink/20 outline-none focus:ring-2 focus:ring-poster-teal/30"
+            />
+          </div>
+        )}
 
+        {/* Name */}
         <div className="space-y-2">
-          <Label htmlFor="name">Your name</Label>
-          <Input
-            id="name"
+          <div className="text-xs uppercase tracking-widest text-poster-ink/40 font-semibold px-1">Your name</div>
+          <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Type your name"
             maxLength={20}
+            autoFocus
+            className="w-full py-4 px-6 rounded-full bg-white/80 border border-poster-ink/10 text-poster-ink font-semibold text-lg placeholder:text-poster-ink/30 outline-none focus:ring-2 focus:ring-poster-teal/30"
           />
         </div>
 
-        <div className="space-y-2">
-          <Label>Pick an avatar</Label>
-          <div className="grid grid-cols-6 gap-2">
+        {/* Avatar grid */}
+        <div className="space-y-3">
+          <div className="text-xs uppercase tracking-widest text-poster-ink/40 font-semibold px-1">Pick an avatar</div>
+          <div className="grid grid-cols-4 gap-3">
             {AVATARS.map((a) => (
               <button
                 key={a.key}
                 onClick={() => setAvatar(a.key)}
                 className={cn(
-                  "aspect-square rounded-xl border-2 p-1 flex items-center justify-center bg-card transition-all",
-                  avatar === a.key ? "border-primary bg-primary/10 scale-110" : "border-border hover:border-muted-foreground",
+                  "aspect-square rounded-2xl p-3 flex items-center justify-center transition-all duration-200",
+                  avatar === a.key
+                    ? "bg-poster-yellow scale-105 shadow-lg"
+                    : "bg-white/60 hover:bg-white/90 active:scale-95",
                 )}
               >
-                <img src={a.src} alt={a.label} className="max-w-full max-h-full object-contain" />
+                <img src={a.src} alt={a.label} className="w-full h-full object-contain" draggable={false} />
               </button>
             ))}
           </div>
         </div>
 
-        {error && <div className="text-sm text-destructive text-center">{error}</div>}
+        {error && (
+          <div className="text-center text-poster-red text-sm font-medium">{error}</div>
+        )}
 
-        <Button onClick={handleJoin} disabled={busy} className="w-full" size="lg">
-          {busy ? "Joining…" : "Join"}
-        </Button>
+        {/* Join */}
+        <button
+          onClick={handleJoin}
+          disabled={busy}
+          className="w-full py-4 rounded-full bg-poster-teal text-white font-bold text-lg hover:bg-poster-teal/90 active:bg-poster-teal/80 transition-colors disabled:opacity-50"
+        >
+          {busy ? "Joining…" : "Join →"}
+        </button>
+
       </div>
     </div>
   );

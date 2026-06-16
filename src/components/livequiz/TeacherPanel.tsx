@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { qrSvgDataUrl } from "./qr";
 import { avatarSrc } from "./avatars";
@@ -40,12 +40,11 @@ export function TeacherPanel() {
   const [collapsed, setCollapsed] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  const createFn = useServerFn(createLiveSession);
+  const createFn    = useServerFn(createLiveSession);
   const getTeacherFn = useServerFn(getTeacherSession);
-  const updateFn = useServerFn(updateLiveSession);
-  const listFn = useServerFn(listResponses);
+  const updateFn    = useServerFn(updateLiveSession);
+  const listFn      = useServerFn(listResponses);
 
-  // Restore session from localStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -58,7 +57,6 @@ export function TeacherPanel() {
     } catch {}
   }, []);
 
-  // Poll responses every 2s while a session exists
   useEffect(() => {
     if (!session?.id) return;
     let cancelled = false;
@@ -73,9 +71,6 @@ export function TeacherPanel() {
     return () => { cancelled = true; clearInterval(iv); };
   }, [session?.id, session?.host_token]);
 
-  // Also poll the session row itself (cheap) so phase changes locally if needed
-  // (Not strictly required — teacher initiates all phase changes.)
-
   const participants = useMemo(() => {
     const m = new Map<string, { name: string; avatar: string }>();
     for (const r of responses) {
@@ -89,21 +84,16 @@ export function TeacherPanel() {
     for (let tries = 0; tries < 5; tries++) {
       const code = makeCode();
       try {
-        const row = await createFn({ data: {
-          code,
-          gameMode: "prep-lock",
-          questions: sampleQuestions(10),
-          timerMaxSeconds: 30,
-        }});
+        const row = await createFn({
+          data: { code, gameMode: "prep-lock", questions: sampleQuestions(10), timerMaxSeconds: 30 },
+        });
         setSession(row as Session);
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: (row as any).id, hostToken: (row as any).host_token }));
         } catch {}
         setCreating(false);
         return;
-      } catch {
-        // duplicate code or transient — retry
-      }
+      } catch {}
     }
     setCreating(false);
   }
@@ -139,97 +129,127 @@ export function TeacherPanel() {
 
   const joinUrl = useMemo(() => {
     if (!session) return "";
-    const origin = window.location.origin;
-    return `${origin}/?livequiz&code=${session.code}`;
+    return `${window.location.origin}/?livequiz&code=${session.code}`;
   }, [session]);
 
-  const qrDataUrl = useMemo(() => session ? qrSvgDataUrl(joinUrl, 240) : "", [joinUrl, session]);
+  const qrDataUrl = useMemo(() => (session ? qrSvgDataUrl(joinUrl, 240) : ""), [joinUrl, session]);
 
-  const answeredThisQuestion = session
+  const answeredThisQ = session
     ? responses.filter((r) => r.question_index === session.current_question_index).length
     : 0;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-80 max-w-[calc(100vw-2rem)] bg-card border-2 border-primary rounded-2xl shadow-2xl overflow-hidden">
+    <div className="fixed bottom-4 right-4 z-50 w-72 max-w-[calc(100vw-2rem)] bg-poster-bg rounded-2xl shadow-2xl overflow-hidden border border-poster-ink/10">
+      {/* Header */}
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="w-full flex items-center justify-between px-4 py-2 bg-primary text-primary-foreground"
+        className="w-full flex items-center justify-between px-4 py-3 bg-poster-teal text-white"
       >
-        <span className="font-bold">Live Quiz · Teacher</span>
-        {collapsed ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        <span className="font-bold text-sm tracking-tight">Live Quiz · Teacher</span>
+        {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       </button>
 
       {!collapsed && (
-        <div className="p-4 space-y-3 max-h-[80vh] overflow-y-auto">
+        <div className="p-4 space-y-4 max-h-[75vh] overflow-y-auto">
+
           {!session ? (
-            <Button onClick={createSession} disabled={creating} className="w-full" size="lg">
+            <button
+              onClick={createSession}
+              disabled={creating}
+              className="w-full py-3 rounded-full bg-poster-teal text-white font-bold text-base hover:bg-poster-teal/90 disabled:opacity-50 transition-colors"
+            >
               {creating ? "Creating…" : "Create Session"}
-            </Button>
+            </button>
           ) : (
             <>
+              {/* Session code */}
               <div className="text-center">
-                <div className="text-xs text-muted-foreground uppercase tracking-wide">Code</div>
-                <div className="text-3xl font-mono font-bold tracking-widest">{session.code}</div>
+                <div className="text-[10px] uppercase tracking-widest text-poster-ink/40 font-semibold">Code</div>
+                <div className="text-3xl font-mono font-bold tracking-widest text-poster-ink mt-0.5">
+                  {session.code}
+                </div>
               </div>
+
+              {/* QR code trigger */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full">Show QR Code</Button>
+                  <button className="w-full py-2 rounded-full bg-white/80 border border-poster-ink/10 text-poster-ink text-sm font-semibold hover:bg-white transition-colors">
+                    Show QR Code
+                  </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-3" align="end">
-                  <img src={qrDataUrl} alt="Join QR" className="w-60 h-60" />
-                  <div className="text-xs text-center mt-2 break-all">{joinUrl}</div>
+                <PopoverContent className="w-auto p-3 bg-poster-bg border-poster-ink/10" align="end">
+                  <img src={qrDataUrl} alt="Join QR" className="w-60 h-60 rounded-xl" />
+                  <div className="text-[10px] text-center mt-2 text-poster-ink/40 break-all">{joinUrl}</div>
                 </PopoverContent>
               </Popover>
 
+              {/* Participants */}
               <div>
-                <div className="text-xs text-muted-foreground mb-1">
+                <div className="text-[10px] uppercase tracking-widest text-poster-ink/40 font-semibold mb-2">
                   Joined ({participants.size})
                 </div>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {[...participants.values()].map((p, i) => (
-                    <div key={i} className="flex items-center gap-1 bg-muted rounded-full px-2 py-1 text-xs">
+                    <div
+                      key={i}
+                      className="flex items-center gap-1 bg-poster-yellow/20 rounded-full px-2 py-1 text-xs font-medium text-poster-ink"
+                    >
                       <img src={avatarSrc(p.avatar)} alt="" className="w-4 h-4" />
                       <span>{p.name}</span>
                     </div>
                   ))}
-                  {participants.size === 0 && <div className="text-xs text-muted-foreground italic">No students yet</div>}
+                  {participants.size === 0 && (
+                    <div className="text-xs text-poster-ink/30 italic">No students yet</div>
+                  )}
                 </div>
               </div>
 
+              {/* Controls */}
               {session.phase === "lobby" && (
-                <Button onClick={startQuiz} disabled={participants.size === 0} className="w-full" size="lg">
-                  <Play size={18} className="mr-2" /> Start
-                </Button>
+                <button
+                  onClick={startQuiz}
+                  disabled={participants.size === 0}
+                  className="w-full py-3 rounded-full bg-poster-teal text-white font-bold flex items-center justify-center gap-2 hover:bg-poster-teal/90 disabled:opacity-40 transition-colors"
+                >
+                  <Play size={16} /> Start
+                </button>
               )}
 
               {session.phase === "active" && (
-                <div className="space-y-2">
-                  <div className="text-xs text-muted-foreground">
-                    Question {session.current_question_index + 1}/{session.questions.length} ·
-                    {" "}{answeredThisQuestion}/{participants.size} answered
-                  </div>
-                  <div className="text-sm bg-muted rounded-lg p-2">
-                    <div className="font-medium">{session.questions[session.current_question_index]?.prep?.token} ___</div>
-                    <div className="text-xs text-muted-foreground">
+                <div className="space-y-3">
+                  <div className="bg-white/60 rounded-xl p-3 space-y-1">
+                    <div className="font-semibold text-sm text-poster-ink">
+                      {session.questions[session.current_question_index]?.prep?.token} ___
+                    </div>
+                    <div className="text-xs text-poster-ink/50">
                       Correct: {PILL_LABEL[session.questions[session.current_question_index]?.correctPillId] ?? session.questions[session.current_question_index]?.correctPillId}
                     </div>
+                    <div className="text-xs text-poster-ink/40">
+                      Q {session.current_question_index + 1}/{session.questions.length} · {answeredThisQ}/{participants.size} answered
+                    </div>
                   </div>
-                  <Button onClick={nextQuestion} className="w-full">
-                    <SkipForward size={16} className="mr-2" />
+                  <button
+                    onClick={nextQuestion}
+                    className="w-full py-3 rounded-full bg-poster-yellow text-white font-bold flex items-center justify-center gap-2 hover:bg-poster-yellow/90 transition-colors"
+                  >
+                    <SkipForward size={16} />
                     {session.current_question_index + 1 >= session.questions.length ? "End → Leaderboard" : "Next Question"}
-                  </Button>
+                  </button>
                 </div>
               )}
 
               {(session.phase === "results" || session.phase === "ended") && (
-                <div className="text-center text-sm font-medium">
+                <div className="text-center text-sm font-semibold text-poster-ink/60">
                   {session.phase === "results" ? "Showing leaderboard to students" : "Session ended"}
                 </div>
               )}
 
-              <Button onClick={resetSession} variant="ghost" size="sm" className="w-full text-muted-foreground">
-                <RotateCcw size={14} className="mr-2" /> End / Reset
-              </Button>
+              <button
+                onClick={resetSession}
+                className="w-full py-2 text-xs text-poster-ink/30 hover:text-poster-ink/60 flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <RotateCcw size={13} /> End / Reset
+              </button>
             </>
           )}
         </div>
