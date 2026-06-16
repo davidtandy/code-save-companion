@@ -82,9 +82,11 @@ export function eliminationOrderFull(q: QuizQuestion): string[] {
 }
 
 /** Absolute-time group thresholds for elimination phases. */
-export const ELIM_T1_MS = 2000; // wrong-type group greys at 2s
-export const ELIM_T2_MS = 4000; // wrong-case group greys at 4s
-export const ELIM_T3_MS = 6000; // individual same-case pills start at 6s
+export const ELIM_T1_MS =  2000; // first half of wrong-type greys
+export const ELIM_T2_MS =  4000; // second half of wrong-type greys
+export const ELIM_T3_MS =  6000; // first half of wrong-case greys
+export const ELIM_T4_MS =  8000; // second half of wrong-case greys
+export const ELIM_T5_MS = 10000; // individual same-case pills start
 
 /**
  * Returns the elimination order split into three tiers plus tier sizes.
@@ -127,8 +129,11 @@ export function eliminationTiersData(q: QuizQuestion): {
 
 /**
  * Given elapsed time, returns how many pills should currently be greyed.
- * Groups 0 and 1 grey all at once at t=2s and t=4s.
- * Group 2 pills grey one-by-one from t=6s, evenly spaced to timer end.
+ * t=2s: first half of wrong-type greys as a group
+ * t=4s: second half of wrong-type greys as a group
+ * t=6s: first half of wrong-case greys as a group
+ * t=8s: second half of wrong-case greys as a group
+ * t=10s+: same-case competitors grey one at a time, evenly spaced to timer end
  */
 export function computeElimCount(
   elapsedMs: number,
@@ -137,11 +142,15 @@ export function computeElimCount(
   tier1Count: number,
   tier2Count: number,
 ): number {
+  const t0half = Math.floor(tier0Count / 2);
+  const t1half = Math.floor(tier1Count / 2);
   if (elapsedMs < ELIM_T1_MS) return 0;
-  if (elapsedMs < ELIM_T2_MS) return tier0Count;
-  if (elapsedMs < ELIM_T3_MS) return tier0Count + tier1Count;
-  const availableMs = Math.max(1, timerMaxMs - ELIM_T3_MS);
-  const progress = Math.min(1, (elapsedMs - ELIM_T3_MS) / availableMs);
+  if (elapsedMs < ELIM_T2_MS) return t0half;
+  if (elapsedMs < ELIM_T3_MS) return tier0Count;
+  if (elapsedMs < ELIM_T4_MS) return tier0Count + t1half;
+  if (elapsedMs < ELIM_T5_MS) return tier0Count + tier1Count;
+  const availableMs = Math.max(1, timerMaxMs - ELIM_T5_MS);
+  const progress = Math.min(1, (elapsedMs - ELIM_T5_MS) / availableMs);
   return tier0Count + tier1Count + Math.floor(progress * tier2Count);
 }
 
