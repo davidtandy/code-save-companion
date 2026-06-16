@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useLiveQuiz } from "./LiveQuizProvider";
 import { avatarSrc } from "./avatars";
 import type { StudentIdentity } from "./StudentLobby";
+import { pillsForQuestion, eliminationOrder } from "./scoring";
 import { useServerFn } from "@tanstack/react-start";
 import { submitResponse } from "@/lib/livequiz.functions";
 
@@ -69,6 +70,33 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit }: Props) {
     }
     return () => onSetSubmit(null);
   }, [session?.phase, locked, idx]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Progressively grey out wrong pills on the cheatsheet as the timer runs down.
+  const elimStart = timerMaxMs * 0.3;
+  const elimEnd   = timerMaxMs * 0.95;
+  const elimProgress = (session?.phase === "active" && !locked)
+    ? Math.min(1, Math.max(0, (elapsed - elimStart) / (elimEnd - elimStart)))
+    : 0;
+  const cappedElimCount = q
+    ? Math.min(
+        Math.floor(elimProgress * eliminationOrder(q, pillsForQuestion(q)).length),
+        Math.max(0, eliminationOrder(q, pillsForQuestion(q)).length - 1),
+      )
+    : 0;
+
+  useEffect(() => {
+    const clear = () =>
+      document.querySelectorAll("[data-quiz-elim]").forEach((el) => el.removeAttribute("data-quiz-elim"));
+    clear();
+    if (!q || session?.phase !== "active" || cappedElimCount === 0) return clear;
+    const order = eliminationOrder(q, pillsForQuestion(q));
+    order.slice(0, cappedElimCount).forEach((pillId) => {
+      document.querySelectorAll(`[data-cell-id="${pillId}"]`).forEach((el) =>
+        (el as HTMLElement).setAttribute("data-quiz-elim", "1"),
+      );
+    });
+    return clear;
+  }, [cappedElimCount, q?.correctPillId, session?.phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading || !session) return null;
 

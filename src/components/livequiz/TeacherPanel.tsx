@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import QRCode from "react-qr-code";
 import { avatarSrc } from "./avatars";
-import { sampleQuestions, PILL_LABEL } from "./scoring";
+import { sampleQuestions, PILL_LABEL, pillsForQuestion, eliminationOrder } from "./scoring";
 import { Play, SkipForward, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -121,14 +121,53 @@ export function TeacherPanel() {
 
   const joinUrl = `${window.location.origin}/?livequiz&code=${FIXED_CODE}`;
 
+  // Timer for elimination animation
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (session?.phase !== "active") return;
+    const t = setInterval(() => setNow(Date.now()), 200);
+    return () => clearInterval(t);
+  }, [session?.phase]);
+
+  const activeQ = session?.phase === "active"
+    ? session.questions?.[session.current_question_index]
+    : null;
+  const startedAt = session?.question_started_at
+    ? new Date(session.question_started_at).getTime()
+    : Date.now();
+  const timerMaxMs = (session?.timer_max_seconds || 30) * 1000;
+  const elapsed = Math.max(0, now - startedAt);
+  const elimStart = timerMaxMs * 0.3;
+  const elimEnd   = timerMaxMs * 0.95;
+  const elimProgress = session?.phase === "active"
+    ? Math.min(1, Math.max(0, (elapsed - elimStart) / (elimEnd - elimStart)))
+    : 0;
+  const cappedElimCount = activeQ
+    ? Math.min(
+        Math.floor(elimProgress * eliminationOrder(activeQ, pillsForQuestion(activeQ)).length),
+        Math.max(0, eliminationOrder(activeQ, pillsForQuestion(activeQ)).length - 1),
+      )
+    : 0;
+
+  useEffect(() => {
+    const clear = () =>
+      document.querySelectorAll("[data-quiz-elim]").forEach((el) => el.removeAttribute("data-quiz-elim"));
+    clear();
+    if (!activeQ || session?.phase !== "active" || cappedElimCount === 0) return clear;
+    const order = eliminationOrder(activeQ, pillsForQuestion(activeQ));
+    order.slice(0, cappedElimCount).forEach((pillId) => {
+      document.querySelectorAll(`[data-cell-id="${pillId}"]`).forEach((el) =>
+        (el as HTMLElement).setAttribute("data-quiz-elim", "1"),
+      );
+    });
+    return clear;
+  }, [cappedElimCount, activeQ?.correctPillId, session?.phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const answeredThisQ = session
     ? responses.filter((r) => r.question_index === session.current_question_index).length
     : 0;
 
   // Current question prompt
-  const activeQ = session?.phase === "active"
-    ? session.questions?.[session.current_question_index]
-    : null;
   const prompt = activeQ
     ? (activeQ.kind === "pronoun"
         ? `${activeQ.prefix ?? ""} ${activeQ.prep.token} ___ ${activeQ.suffix ?? ""}`.trim()
