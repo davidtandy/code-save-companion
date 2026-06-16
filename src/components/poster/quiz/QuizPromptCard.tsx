@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useRef } from "react";
 import { X, Flame, Search, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";

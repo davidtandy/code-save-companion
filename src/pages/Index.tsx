@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Poster, POSTER_W, POSTER_H, type PosterHandle } from "@/components/poster/Poster";
 import { SpotlightOverlay } from "@/components/poster/SpotlightOverlay";

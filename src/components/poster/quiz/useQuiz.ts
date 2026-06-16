@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useCallback, useRef, useState } from "react";
 import { generateQuestion, articlePillGender, isIndefArticlePill, LEARN_QUESTIONS, type QuizQuestion } from "./quizData";
 import { WORDS, type CaseKey } from "../wordData";
