@@ -891,13 +891,13 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
         onSetSubmit={(fn) => { liveQuizSubmit.current = fn; }}
       />
     )}
-    {!liveStudent && showWelcome && (
+    {!liveStudent && !liveTeacher && showWelcome && (
       <WelcomeModal onDismiss={() => dismissWelcome(false)} onTour={() => dismissWelcome(true)} isMobile={isPortraitMobile} />
     )}
-    {!liveStudent && showCursorDemo && (
+    {!liveStudent && !liveTeacher && showCursorDemo && (
       <CursorDemo isMobile={isPortraitMobile} onDone={() => setShowCursorDemo(false)} onReset={goOverview} />
     )}
-    {!liveStudent && showIntroStage && (
+    {!liveStudent && !liveTeacher && showIntroStage && (
       <IntroStage onComplete={() => {
         try { localStorage.setItem("introStageSeen", "1"); } catch { /* noop */ }
         setShowIntroStage(false);
