@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { qrSvgDataUrl } from "./qr";
+import QRCode from "react-qr-code";
 import { avatarSrc } from "./avatars";
 import { sampleQuestions, PILL_LABEL } from "./scoring";
 import { Play, SkipForward, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
@@ -121,7 +121,6 @@ export function TeacherPanel() {
 
   // QR always encodes the fixed URL — can be generated without a live session
   const joinUrl = `${window.location.origin}/?livequiz&code=${FIXED_CODE}`;
-  const qrDataUrl = useMemo(() => qrSvgDataUrl(joinUrl, 300), [joinUrl]);
 
   const answeredThisQ = session
     ? responses.filter((r) => r.question_index === session.current_question_index).length
@@ -131,8 +130,8 @@ export function TeacherPanel() {
     <>
       {/* ── QR corner widget — fixed top-right, just below the header ── */}
       <div className="fixed top-[52px] right-3 z-40 flex flex-col items-center gap-1">
-        <div className="bg-white/95 rounded-xl p-1.5 shadow-md border border-poster-ink/10">
-          <img src={qrDataUrl} alt="Join QR" className="w-24 h-24 block" />
+        <div className="bg-white rounded-xl p-2 shadow-md border border-poster-ink/10">
+          <QRCode value={joinUrl} size={96} level="M" />
         </div>
         <div className="text-[10px] font-mono font-bold text-poster-ink/50 tracking-widest">
           {FIXED_CODE}
