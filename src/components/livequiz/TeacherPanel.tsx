@@ -119,21 +119,54 @@ export function TeacherPanel() {
     setResponses([]);
   }
 
-  // QR always encodes the fixed URL — can be generated without a live session
   const joinUrl = `${window.location.origin}/?livequiz&code=${FIXED_CODE}`;
 
   const answeredThisQ = session
     ? responses.filter((r) => r.question_index === session.current_question_index).length
     : 0;
 
+  // Current question prompt
+  const activeQ = session?.phase === "active"
+    ? session.questions?.[session.current_question_index]
+    : null;
+  const prompt = activeQ
+    ? (activeQ.kind === "pronoun"
+        ? `${activeQ.prefix ?? ""} ${activeQ.prep.token} ___ ${activeQ.suffix ?? ""}`.trim()
+        : `${activeQ.prefix ?? ""} ${activeQ.prep.token} ___ ${activeQ.nounDe}${activeQ.suffix ? " " + activeQ.suffix : ""}`.trim())
+    : null;
+  const promptEn = activeQ
+    ? (activeQ.kind === "pronoun" ? activeQ.targetEn : `${activeQ.nounArticle} ${activeQ.nounEn}`)
+    : null;
+
   return (
     <>
-      {/* ── QR corner widget — fixed top-right, just below the header ── */}
-      <div className="fixed top-[52px] right-3 z-40 flex flex-col items-center gap-1">
-        <div className="bg-white rounded-xl p-2 shadow-md border border-poster-ink/10">
-          <QRCode value={joinUrl} size={96} level="M" />
+      {/* ── Large question display — left half of screen, active phase only ── */}
+      {activeQ && (
+        <div className="fixed left-0 top-0 bottom-0 w-[52%] z-40 flex flex-col items-center justify-center pointer-events-none px-16">
+          <div className="text-center space-y-6">
+            <div className="text-[11px] uppercase tracking-widest text-poster-ink/40 font-semibold">
+              Question {session.current_question_index + 1} of {session.questions.length}
+              {" · "}{answeredThisQ} / {participants.size} answered
+            </div>
+            <div className="text-7xl font-bold text-poster-ink leading-tight tracking-tight">
+              {prompt}
+            </div>
+            {promptEn && (
+              <div className="text-2xl text-poster-ink/50 font-medium">{promptEn}</div>
+            )}
+          </div>
         </div>
-        <div className="text-[10px] font-mono font-bold text-poster-ink/50 tracking-widest">
+      )}
+
+      {/* ── QR corner widget — fixed top-right, just below the header ── */}
+      <div className="fixed top-[52px] right-4 z-40 flex flex-col items-center gap-2">
+        <div className="text-[11px] uppercase tracking-widest text-poster-ink/50 font-semibold text-center">
+          Scan to join the quiz!
+        </div>
+        <div className="bg-white rounded-2xl p-3 shadow-lg border border-poster-ink/10">
+          <QRCode value={joinUrl} size={192} level="M" />
+        </div>
+        <div className="text-xs font-mono font-bold text-poster-ink/40 tracking-widest">
           {FIXED_CODE}
         </div>
       </div>
@@ -149,7 +182,7 @@ export function TeacherPanel() {
         </button>
 
         {!collapsed && (
-          <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
+          <div className="p-4 space-y-3 max-h-[50vh] overflow-y-auto">
             {!session ? (
               <button
                 onClick={createSession}
@@ -193,16 +226,8 @@ export function TeacherPanel() {
 
                 {session.phase === "active" && (
                   <div className="space-y-2">
-                    <div className="bg-white/60 rounded-xl p-3 space-y-1">
-                      <div className="font-semibold text-sm text-poster-ink">
-                        {session.questions[session.current_question_index]?.prep?.token} ___
-                      </div>
-                      <div className="text-xs text-poster-ink/50">
-                        ✓ {PILL_LABEL[session.questions[session.current_question_index]?.correctPillId] ?? session.questions[session.current_question_index]?.correctPillId}
-                      </div>
-                      <div className="text-xs text-poster-ink/40">
-                        {session.current_question_index + 1}/{session.questions.length} · {answeredThisQ}/{participants.size} answered
-                      </div>
+                    <div className="text-xs text-poster-ink/40 text-center">
+                      {answeredThisQ} / {participants.size} answered
                     </div>
                     <button
                       onClick={nextQuestion}
