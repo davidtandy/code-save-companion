@@ -108,6 +108,7 @@ type Props = {
     onGroupTap: (groupType: "pronouns" | "articles") => "correct" | "wrong";
     onColumnTap: (columnType: "defArticles" | "indefArticles") => "correct" | "wrong";
   } | null;
+  hidePossessives?: boolean;
 };
 
 /* ---------- Atoms ---------- */
@@ -399,7 +400,7 @@ const LegendSwatch = ({
 /* ---------- Main poster ---------- */
 
 export const Poster = forwardRef<PosterHandle, Props>(
-  ({ activeCase, activeWordId, morphContextId = null, pinnedPossId = null, onTapCase, onTapCaseIcon, onTapWord, onTapBackground, onTapVerbCloud, genderMode = "off", morphMap = null, flourish = { epoch: 0, indices: new Map() }, quizBlur = false, quizActive = false, slimPills = false, pillPadH = 28, pillPadV = 32, caseGap = 16, mobileZoomedCase, caseHoverDim = false, pinnedCase = null, learnDim = null, learnOverlay = null }, ref) => {
+  ({ activeCase, activeWordId, morphContextId = null, pinnedPossId = null, onTapCase, onTapCaseIcon, onTapWord, onTapBackground, onTapVerbCloud, genderMode = "off", morphMap = null, flourish = { epoch: 0, indices: new Map() }, quizBlur = false, quizActive = false, slimPills = false, pillPadH = 28, pillPadV = 32, caseGap = 16, mobileZoomedCase, caseHoverDim = false, pinnedCase = null, learnDim = null, learnOverlay = null, hidePossessives = false }, ref) => {
     const rootRef = useRef<HTMLDivElement>(null);
     const cellRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -1064,10 +1065,8 @@ export const Poster = forwardRef<PosterHandle, Props>(
           )}
         </div>
 
-        {/* Possessives — desktop: normal flow row. Mobile: each pill is permanently
-            absolutely positioned and transitions via transform between the full-view
-            row position and the case-zoom column position beside the active case. */}
-        {isMobilePoss ? (
+        {/* Possessives — hidden entirely in live quiz student mode */}
+        {!hidePossessives && (isMobilePoss ? (
           // Mobile: single persistent set of pills, positions driven by transform.
           // The outer div is a zero-size anchor at poster origin.
           <div data-group="g-pos" data-quiz-hide aria-hidden={false}
@@ -1106,7 +1105,7 @@ export const Poster = forwardRef<PosterHandle, Props>(
                     className="flex-1 text-sm font-display font-semibold cursor-pointer" />
             ))}
           </div>
-        )}
+        ))}
 
         {/* Learn overlay — step 1 case rectangles */}
         {learnOverlay && overlayRects.cases.map(({ caseKey, rect }) => {

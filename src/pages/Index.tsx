@@ -38,6 +38,7 @@ import { StudentLobby, type StudentIdentity } from "@/components/livequiz/Studen
 import { TeacherPanel } from "@/components/livequiz/TeacherPanel";
 import { LiveStudentOverlay } from "@/components/livequiz/LiveStudentOverlay";
 import { LiveQuizProvider } from "@/components/livequiz/LiveQuizProvider";
+import { RotatePrompt } from "@/components/RotatePrompt";
 
 function getLiveMode(): "student" | "teacher" | null {
   if (typeof window === "undefined") return null;
@@ -1130,6 +1131,7 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
               flourish={flourish}
               quizBlur={quiz.active}
               quizActive={quiz.active}
+              hidePossessives={!!liveStudent}
             />
           </div>
         </div>
@@ -1289,6 +1291,7 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
           iconRect={casePopup.iconRect}
           onClose={() => setCasePopup(null)}
         />)}
+      <RotatePrompt />
     </main>
     </>
   );

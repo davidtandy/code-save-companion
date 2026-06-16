@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Glix: teal alien with pointed ears -->
+  <!-- Ears -->
+  <path d="M8 58 L4 34 L20 52 Z" fill="#17a589"/>
+  <path d="M92 58 L96 34 L80 52 Z" fill="#17a589"/>
+  <!-- Body (oval) -->
+  <ellipse cx="50" cy="57" rx="36" ry="40" fill="#1ABC9C"/>
+  <!-- Large alien eyes -->
+  <ellipse cx="35" cy="50" rx="12" ry="15" fill="#0a3d35"/>
+  <ellipse cx="65" cy="50" rx="12" ry="15" fill="#0a3d35"/>
+  <!-- Iris shine -->
+  <ellipse cx="37" cy="45" rx="5" ry="6" fill="#7fefdb"/>
+  <ellipse cx="67" cy="45" rx="5" ry="6" fill="#7fefdb"/>
+  <!-- Tiny smile -->
+  <path d="M38 74 Q50 81 62 74" stroke="#0a3d35" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+</svg>
