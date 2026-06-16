@@ -73,6 +73,7 @@ export type Database = {
           id: string
           phase: string
           question_started_at: string | null
+          questions: Json
           timer_max_seconds: number
           updated_at: string
         }
@@ -84,6 +85,7 @@ export type Database = {
           id?: string
           phase?: string
           question_started_at?: string | null
+          questions?: Json
           timer_max_seconds?: number
           updated_at?: string
         }
@@ -95,6 +97,7 @@ export type Database = {
           id?: string
           phase?: string
           question_started_at?: string | null
+          questions?: Json
           timer_max_seconds?: number
           updated_at?: string
         }

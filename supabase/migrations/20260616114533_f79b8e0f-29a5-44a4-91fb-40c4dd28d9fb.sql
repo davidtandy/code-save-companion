@@ -1,0 +1,1 @@
+ALTER TABLE public.quiz_session ADD COLUMN IF NOT EXISTS questions jsonb NOT NULL DEFAULT '[]'::jsonb;
