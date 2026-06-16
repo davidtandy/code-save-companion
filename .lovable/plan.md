@@ -1,59 +1,74 @@
-# Plan: Port `genaucheatsheet` into this Lovable project
+# Live Classroom Quiz – Phase 1: Backend schema
 
-You picked option 2 (replace this project with the uploaded one). The uploaded zip is a Vite + React + React Router app. This Lovable project runs on **TanStack Start** (file-based routing under `src/routes/`, no `main.tsx`/`App.tsx` entry). I'll port the source into the existing TanStack Start shell rather than try to swap the framework — that keeps the preview, SSR, and build pipeline working.
+Per your "plan-then-execute" rule, here is exactly what I'll do **before** writing any code or running migrations. Nothing happens until you say go.
 
-## What gets copied from the zip
+## 1. Database tables (migration)
 
-From `genaucheatsheet-main 2/`:
+Two tables in `public`, both with Realtime enabled, no auth required (students are anonymous).
 
-- `src/components/**` → `src/components/**` (Poster, IntroStage, quizzes, RotateOverlay, NavLink, CursorDemo, WelcomeModal, poster/*, etc.)
-  - Skip: `*.backup.tsx`, `.DS_Store`
-- `src/index.css` → merged into `src/styles.css` (keep TanStack base + Tailwind v4 setup; append the cheatsheet's custom CSS/variables; drop legacy Tailwind v3 `@tailwind` directives if present)
-- `src/App.css` → `src/app.css` (imported from the new home route if needed)
-- `public/favicon.ico`, `public/robots.txt`, `public/placeholder.svg` → `public/` (overwrite)
-- `index.html` `<head>` content (title, meta, fonts) → merged into `src/routes/__root.tsx` `head()`
-- `tailwind.config.ts` colors/extensions → translated into Tailwind v4 `@theme` tokens in `src/styles.css` (Tailwind v4 has no config file)
+### `quiz_session`
+Single-row-per-active-session table that the teacher controls and students subscribe to.
 
-## What I won't copy
+| column | type | notes |
+|---|---|---|
+| `id` | uuid PK | `gen_random_uuid()` |
+| `code` | text unique | short join code (e.g. 4 chars) for QR/url |
+| `game_mode` | text | which quiz set (e.g. `articleMutation`, `prepLock`, etc.) |
+| `phase` | text | `lobby` \| `active` \| `results` \| `ended` |
+| `current_question_index` | int | default 0 |
+| `question_started_at` | timestamptz | null until phase=active for that question |
+| `timer_max_seconds` | int | default 30 |
+| `created_at` | timestamptz | default now() |
+| `updated_at` | timestamptz | default now(), trigger to bump |
 
-- `package.json`, `bun.lockb`, `package-lock.json`, `vite.config.ts`, `tsconfig*.json`, `postcss.config.js`, `tailwind.config.ts`, `eslint.config.js`, `components.json` — current TanStack Start versions stay
-- `src/main.tsx`, `src/App.tsx` — replaced by TanStack route files
-- `src/components/ui/**` — already present in this project (shadcn). I'll only copy ones missing here: `toast.tsx`, `toaster.tsx`, `use-toast.ts` (the uploaded app uses them)
-- `.claude/`, `.lovable/`, `.vscode/`, `.DS_Store`, `docs/`, `demo.*`, `svg-check.mjs`, `vitest.config.ts`, `src/test/` (test setup not wired into TanStack template)
-- `.git` (none present, but excluded as a safety rule)
+### `quiz_responses`
+One row per student answer.
 
-## Routing changes
+| column | type | notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `session_id` | uuid FK → quiz_session(id) on delete cascade | |
+| `student_id` | uuid | client-generated, persisted in localStorage |
+| `student_name` | text | |
+| `student_avatar` | text | avatar key |
+| `question_index` | int | |
+| `answer` | text | the pill value chosen |
+| `is_correct` | bool | |
+| `response_ms` | int | ms from question_started_at to submission |
+| `points` | int | speed-weighted |
+| `created_at` | timestamptz | default now() |
 
-The uploaded `App.tsx` uses React Router with what appears to be a single main page (`IntroStage` → `Poster`). I'll:
+Unique constraint: `(session_id, student_id, question_index)` – one answer per question per student.
 
-- Replace `src/routes/index.tsx` placeholder with the cheatsheet's main page component (rendering `IntroStage`/`Poster` flow as in the original `App.tsx`)
-- Keep `src/routes/__root.tsx` as the shell, add the favicon/title/meta from the original `index.html`
-- Not introduce extra routes — original app appears single-page
+A lightweight "presence" lobby list is derived from distinct `(student_id, student_name, student_avatar)` in `quiz_responses` once they answer, plus a Realtime presence channel for lobby joins (no extra table needed).
 
-If `App.tsx` actually has multiple React Router routes, I'll create matching files under `src/routes/` (e.g. `/about`).
+## 2. RLS + GRANTs
 
-## Dependencies to install
+Anonymous students need full read + insert. Only the teacher (also anon, no auth) needs update on `quiz_session`. Since there's no auth, access is open but scoped via the unguessable session `id`/`code`:
 
-I'll diff the uploaded `package.json` against the current one and `bun add` anything missing (likely: `framer-motion`, `lucide-react` versions, `react-router-dom` is NOT needed — replaced by TanStack — any audio/quiz libs the app uses, etc.). I'll list them before installing.
+- `quiz_session`: `GRANT SELECT, INSERT, UPDATE ON … TO anon, authenticated;`
+- `quiz_responses`: `GRANT SELECT, INSERT ON … TO anon, authenticated;`
+- RLS enabled on both, with permissive policies (`USING (true)` for select/insert; update on quiz_session also `USING (true)`).
 
-## CSS / Tailwind
+Trade-off: anyone with a session code can mutate it. Acceptable for a classroom tool with ephemeral sessions; documented as a known limit. If you want stricter teacher-only updates later, we can add a `teacher_token` column checked in the policy.
 
-- Current project uses Tailwind v4 via `@import "tailwindcss"` in `src/styles.css`.
-- Uploaded project uses Tailwind v3 with `tailwind.config.ts`. I'll port custom colors/animations/fonts into Tailwind v4 `@theme {}` blocks and copy custom CSS layers verbatim.
-- All custom CSS variables, font-face declarations, and keyframes from the original `src/index.css` and `src/App.css` will be preserved.
+## 3. Realtime
 
-## Expected result
+Both tables added to `supabase_realtime` publication so the cheatsheet and teacher view can subscribe to changes.
 
-- Visiting `/` shows the German grammar cheatsheet exactly as in the source repo (Intro → Poster, with quizzes, mobile carousel, rotate overlay, etc.)
-- Build/dev server runs under TanStack Start with no broken imports
-- Favicon and page title match the original
+## 4. What I will **not** do in this step
 
-## Risks / things to confirm afterwards
+- No UI changes
+- No `?livequiz` / `?teacherlivequiz` wiring
+- No `useQuiz.ts` edits
+- No QR code generation
+- No new components
 
-- React Router → TanStack Router substitution inside any deep component (e.g. `NavLink`, navigation hooks) needs find-and-replace. I'll grep for `react-router-dom` usages and rewrite to `@tanstack/react-router` equivalents.
-- SSR may choke on browser-only code (window, document at module scope). If so, I'll dynamically import the offending modules or mark the route component as client-only.
-- Tailwind v3 → v4 token translation may need a follow-up pass if some classes don't resolve.
+Those come in Phase 2, planned separately once the schema is in.
 
----
+## Files touched in this phase
 
-**Reply "go" (or with adjustments) and I'll execute.** No files will be modified until you approve.
+- One migration (created via the migration tool)
+- Nothing else
+
+Reply "go" to run the migration, or tell me what to change.
