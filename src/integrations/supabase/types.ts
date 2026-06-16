@@ -14,7 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      quiz_responses: {
+        Row: {
+          answer: string
+          created_at: string
+          id: string
+          is_correct: boolean
+          points: number
+          question_index: number
+          response_ms: number
+          session_id: string
+          student_avatar: string
+          student_id: string
+          student_name: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          points?: number
+          question_index: number
+          response_ms?: number
+          session_id: string
+          student_avatar: string
+          student_id: string
+          student_name: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          points?: number
+          question_index?: number
+          response_ms?: number
+          session_id?: string
+          student_avatar?: string
+          student_id?: string
+          student_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_responses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_session"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_session: {
+        Row: {
+          code: string
+          created_at: string
+          current_question_index: number
+          game_mode: string
+          id: string
+          phase: string
+          question_started_at: string | null
+          timer_max_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          current_question_index?: number
+          game_mode: string
+          id?: string
+          phase?: string
+          question_started_at?: string | null
+          timer_max_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          current_question_index?: number
+          game_mode?: string
+          id?: string
+          phase?: string
+          question_started_at?: string | null
+          timer_max_seconds?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
