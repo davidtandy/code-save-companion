@@ -287,8 +287,8 @@ export const resetLiveSession = createServerFn({ method: "POST" })
       .maybeSingle();
     if (e1) throw new Error(e1.message);
     if (!sess || sess.host_token !== data.hostToken) throw new Error("Unauthorized");
-    // Clear all responses for this session
-    await sb.from("quiz_responses").delete().eq("session_id", data.sessionId);
+    // Clear answer rows but keep join rows (question_index=-1) so students stay in lobby
+    await sb.from("quiz_responses").delete().eq("session_id", data.sessionId).gte("question_index", 0);
     // Reset session to lobby with fresh questions
     const { data: row, error: e2 } = await sb
       .from("quiz_session")
