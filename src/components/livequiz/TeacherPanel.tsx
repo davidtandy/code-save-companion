@@ -293,7 +293,7 @@ export function TeacherPanel() {
               </div>
               <div className="text-5xl font-bold text-poster-ink leading-snug tracking-tight drop-shadow-sm flex flex-col items-center gap-1">
                 {sentence.deBefore && <span>{sentence.deBefore}</span>}
-                <span className="text-poster-ink/35 italic border-b-[3px] border-black px-4 min-w-[64px] text-center">
+                <span className="text-poster-ink/35 italic px-4 min-w-[64px] text-center" style={{ borderBottom: "3px solid black" }}>
                   {sentence.hint || " "}
                 </span>
                 {sentence.deAfter && <span>{sentence.deAfter.trimStart()}</span>}
