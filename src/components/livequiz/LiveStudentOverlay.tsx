@@ -118,6 +118,14 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
     const clear = () =>
       document.querySelectorAll("[data-quiz-elim]").forEach((el) => el.removeAttribute("data-quiz-elim"));
     clear();
+    // After correct answer: grey all pills except the correct one
+    if (myAnswer?.is_correct && q) {
+      document.querySelectorAll("[data-cell-id]").forEach((el) => {
+        if ((el as HTMLElement).dataset.cellId !== q.correctPillId)
+          (el as HTMLElement).setAttribute("data-quiz-elim", "1");
+      });
+      return clear;
+    }
     if (!tiers || session?.phase !== "active" || cappedElimCount === 0) return clear;
     tiers.order.slice(0, cappedElimCount).forEach((pillId) => {
       document.querySelectorAll(`[data-cell-id="${pillId}"]`).forEach((el) =>
@@ -125,7 +133,7 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
       );
     });
     return clear;
-  }, [cappedElimCount, q?.correctPillId, session?.phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cappedElimCount, q?.correctPillId, session?.phase, myAnswer?.is_correct]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading || !session) return null;
 
