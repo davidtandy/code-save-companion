@@ -131,6 +131,7 @@ export function TeacherPanel() {
   const [collapsed, setCollapsed] = useState(false);
   const [creating, setCreating] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [statsExpanded, setStatsExpanded] = useState(false);
   const creatingRef = useRef(false); // synchronous guard against double-submit
 
   const createFn     = useServerFn(createLiveSession);
@@ -308,7 +309,14 @@ export function TeacherPanel() {
   }, [answeredThisQ, participants.size, session?.phase, session?.current_question_index]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset breakdown when question advances
-  useEffect(() => { setShowBreakdown(false); }, [session?.current_question_index]);
+  useEffect(() => { setShowBreakdown(false); setStatsExpanded(false); }, [session?.current_question_index]);
+
+  // Expand stats panel 2.5s after breakdown
+  useEffect(() => {
+    if (!showBreakdown) { setStatsExpanded(false); return; }
+    const t = setTimeout(() => setStatsExpanded(true), 2500);
+    return () => clearTimeout(t);
+  }, [showBreakdown, session?.current_question_index]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sentence = activeQ
     ? activeQ.sentence
@@ -335,7 +343,15 @@ export function TeacherPanel() {
       <div className="fixed left-0 top-[52px] bottom-0 w-[460px] z-50 flex flex-col p-4 gap-3 pointer-events-none">
 
         {/* Question sentence — blank fills in with answer on breakdown */}
-        <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 px-2">
+        <div
+          className="flex flex-col items-center justify-center text-center space-y-4 px-2 overflow-hidden"
+          style={{
+            flexGrow: statsExpanded ? 0 : 1,
+            opacity: statsExpanded ? 0 : 1,
+            maxHeight: statsExpanded ? 0 : undefined,
+            transition: "flex-grow 0.5s ease-in-out, opacity 0.35s ease-in-out, max-height 0.5s ease-in-out",
+          }}
+        >
           {activeQ && sentence && (
             <>
               <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold bg-white/70 backdrop-blur-sm rounded-full px-3 py-1">
@@ -363,7 +379,10 @@ export function TeacherPanel() {
         </div>
 
         {/* Controls — shows student stats during breakdown, normal controls otherwise */}
-        <div className="pointer-events-auto bg-poster-bg/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden border border-poster-ink/10">
+        <div
+          className="pointer-events-auto bg-poster-bg/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden border border-poster-ink/10 flex flex-col"
+          style={{ flexGrow: statsExpanded ? 1 : 0, transition: "flex-grow 0.5s ease-in-out" }}
+        >
           <button
             onClick={() => setCollapsed((c) => !c)}
             className="w-full flex items-center justify-between px-4 py-3 bg-poster-teal text-white"
@@ -373,7 +392,7 @@ export function TeacherPanel() {
           </button>
 
           {!collapsed && (
-            <div className="p-4 space-y-3 max-h-[40vh] overflow-y-auto">
+            <div className={cn("p-4 space-y-3 overflow-y-auto", statsExpanded ? "flex-1" : "max-h-[40vh]")}>
               {!session ? (
                 <button
                   onClick={createSession}
@@ -462,7 +481,8 @@ export function TeacherPanel() {
                   {session.phase === "lobby" && (
                     <button
                       onClick={startQuiz}
-                      className="w-full py-3 rounded-full bg-poster-teal text-white font-bold flex items-center justify-center gap-2 hover:bg-poster-teal/90 transition-colors"
+                      disabled={participants.size === 0}
+                      className="w-full py-3 rounded-full bg-poster-teal text-white font-bold flex items-center justify-center gap-2 hover:bg-poster-teal/90 disabled:opacity-40 transition-colors"
                     >
                       <Play size={16} /> Start
                     </button>

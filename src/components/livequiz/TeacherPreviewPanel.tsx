@@ -48,6 +48,7 @@ export function TeacherPreviewPanel() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [questionStartedAt, setQuestionStartedAt] = useState<number>(Date.now());
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [statsExpanded, setStatsExpanded] = useState(false);
   const [responses, setResponses] = useState<any[]>([]);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -99,7 +100,14 @@ export function TeacherPreviewPanel() {
   }, [timerExpired, phase, currentIdx]);
 
   // Reset breakdown when question advances
-  useEffect(() => { setShowBreakdown(false); }, [currentIdx]);
+  useEffect(() => { setShowBreakdown(false); setStatsExpanded(false); }, [currentIdx]);
+
+  // Expand stats panel 2.5s after breakdown
+  useEffect(() => {
+    if (!showBreakdown) { setStatsExpanded(false); return; }
+    const t = setTimeout(() => setStatsExpanded(true), 2500);
+    return () => clearTimeout(t);
+  }, [showBreakdown, currentIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Generate fake responses when breakdown shows
   useEffect(() => {
@@ -168,7 +176,15 @@ export function TeacherPreviewPanel() {
       <div className="fixed left-0 top-[52px] bottom-0 w-[460px] z-50 flex flex-col p-4 gap-3 pointer-events-none">
 
         {/* Question sentence */}
-        <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 px-2">
+        <div
+          className="flex flex-col items-center justify-center text-center space-y-4 px-2 overflow-hidden"
+          style={{
+            flexGrow: statsExpanded ? 0 : 1,
+            opacity: statsExpanded ? 0 : 1,
+            maxHeight: statsExpanded ? 0 : undefined,
+            transition: "flex-grow 0.5s ease-in-out, opacity 0.35s ease-in-out, max-height 0.5s ease-in-out",
+          }}
+        >
           {activeQ && sentence && (
             <>
               <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold bg-white/70 backdrop-blur-sm rounded-full px-3 py-1">
@@ -201,7 +217,10 @@ export function TeacherPreviewPanel() {
         </div>
 
         {/* Controls */}
-        <div className="pointer-events-auto bg-poster-bg/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden border border-poster-ink/10">
+        <div
+          className="pointer-events-auto bg-poster-bg/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden border border-poster-ink/10 flex flex-col"
+          style={{ flexGrow: statsExpanded ? 1 : 0, transition: "flex-grow 0.5s ease-in-out" }}
+        >
           {/* Header */}
           <button
             onClick={() => setCollapsed((c) => !c)}
@@ -212,7 +231,7 @@ export function TeacherPreviewPanel() {
           </button>
 
           {!collapsed && (
-            <div className="p-4 space-y-3 max-h-[40vh] overflow-y-auto">
+            <div className={cn("p-4 space-y-3 overflow-y-auto", statsExpanded ? "flex-1" : "max-h-[40vh]")}>
               {phase === "idle" ? (
                 <button
                   onClick={() => setPhase("lobby")}
