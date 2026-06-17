@@ -366,7 +366,7 @@ body {
   transition: opacity 0.7s ease, filter 0.7s ease, background-color 0.7s ease, color 0.7s ease;
 }
 [data-cell-id][data-quiz-elim="1"] {
-  background-color: #959595 !important;
+  background-color: #ababab !important;
   color: #ffffff !important;
   filter: grayscale(1) !important;
   pointer-events: none !important;
