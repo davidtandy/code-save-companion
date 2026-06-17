@@ -49,6 +49,7 @@ export function TeacherPreviewPanel() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [questionStartedAt, setQuestionStartedAt] = useState<number>(Date.now());
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [panelExpanded, setPanelExpanded] = useState(false);
   const [statsExpanded, setStatsExpanded] = useState(false);
   const [prevRankOrder, setPrevRankOrder] = useState<string[]>([]);
   const [pillAvatars, setPillAvatars] = useState<{ key: string; x: number; y: number; avatarKey: string; delayMs: number }[]>([]);
@@ -105,15 +106,17 @@ export function TeacherPreviewPanel() {
   // Reset breakdown when question advances
   useEffect(() => {
     setShowBreakdown(false);
+    setPanelExpanded(false);
     setStatsExpanded(false);
     setPillAvatars([]);
   }, [currentIdx]);
 
-  // Expand stats panel 2.5s after breakdown
+  // Slide panel up 1.5s after breakdown; reveal rank animations at 2.5s
   useEffect(() => {
-    if (!showBreakdown) { setStatsExpanded(false); return; }
-    const t = setTimeout(() => setStatsExpanded(true), 2500);
-    return () => clearTimeout(t);
+    if (!showBreakdown) { setPanelExpanded(false); setStatsExpanded(false); return; }
+    const t1 = setTimeout(() => setPanelExpanded(true), 1500);
+    const t2 = setTimeout(() => setStatsExpanded(true), 2500);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [showBreakdown, currentIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scatter avatars onto their chosen pills after breakdown
@@ -217,9 +220,9 @@ export function TeacherPreviewPanel() {
         <div
           className="flex flex-col items-center justify-center text-center space-y-4 px-2 overflow-hidden"
           style={{
-            flexGrow: statsExpanded ? 0 : 1,
-            opacity: statsExpanded ? 0 : 1,
-            maxHeight: statsExpanded ? 0 : undefined,
+            flexGrow: panelExpanded ? 0 : 1,
+            opacity: panelExpanded ? 0 : 1,
+            maxHeight: panelExpanded ? 0 : undefined,
             transition: "flex-grow 0.5s ease-in-out, opacity 0.35s ease-in-out, max-height 0.5s ease-in-out",
           }}
         >
@@ -257,7 +260,7 @@ export function TeacherPreviewPanel() {
         {/* Controls */}
         <div
           className="pointer-events-auto bg-poster-bg/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden border border-poster-ink/10 flex flex-col"
-          style={{ flexGrow: statsExpanded ? 1 : 0, transition: "flex-grow 0.5s ease-in-out" }}
+          style={{ flexGrow: panelExpanded ? 1 : 0, transition: "flex-grow 0.5s ease-in-out" }}
         >
           {/* Header */}
           <button
@@ -269,7 +272,7 @@ export function TeacherPreviewPanel() {
           </button>
 
           {!collapsed && (
-            <div className={cn("p-4 space-y-3 overflow-y-auto", statsExpanded ? "flex-1" : "max-h-[40vh]")}>
+            <div className={cn("p-4 space-y-3 overflow-y-auto", panelExpanded ? "flex-1" : "max-h-[40vh]")}>
               {phase === "idle" ? (
                 <button
                   onClick={() => setPhase("lobby")}
