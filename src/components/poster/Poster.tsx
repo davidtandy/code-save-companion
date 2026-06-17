@@ -1040,7 +1040,7 @@ export const Poster = forwardRef<PosterHandle, Props>(
           </div>
 
           {/* Floating cloud stamps — desktop only */}
-          {!slimPills && (
+          {!slimPills && !quizFill && (
             <>
               <button
                 ref={(el) => registerRef("verb-lieben", el)}
