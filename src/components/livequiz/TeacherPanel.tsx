@@ -262,9 +262,42 @@ export function TeacherPanel() {
     return clear;
   }, [cappedElimCount, activeQ?.correctPillId, session?.phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const timeRatio = Math.max(0, Math.min(1, 1 - elapsed / timerMaxMs));
+  const timerExpired = timeRatio <= 0;
+
   const answeredThisQ = session
     ? responses.filter((r) => r.question_index === session.current_question_index).length
     : 0;
+
+  const [showBreakdown, setShowBreakdown] = useState(false);
+
+  const sessionLeaderboard = useMemo(() => {
+    const totals = new Map<string, { id: string; name: string; avatar: string; points: number }>();
+    for (const r of responses) {
+      if (r.question_index < 0) continue;
+      const cur = totals.get(r.student_id) ?? { id: r.student_id, name: r.student_name, avatar: r.student_avatar, points: 0 };
+      cur.points += r.points || 0;
+      totals.set(r.student_id, cur);
+    }
+    return [...totals.values()].sort((a, b) => b.points - a.points);
+  }, [responses]);
+
+  // Auto-advance: timer expired → immediate
+  useEffect(() => {
+    if (!timerExpired || session?.phase !== "active" || showBreakdown) return;
+    setShowBreakdown(true);
+  }, [timerExpired, session?.phase, session?.current_question_index]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-advance: all students answered → 1s delay
+  useEffect(() => {
+    if (session?.phase !== "active" || showBreakdown || participants.size === 0) return;
+    if (answeredThisQ < participants.size) return;
+    const t = setTimeout(() => setShowBreakdown(true), 1000);
+    return () => clearTimeout(t);
+  }, [answeredThisQ, participants.size, session?.phase, session?.current_question_index]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset breakdown when question advances
+  useEffect(() => { setShowBreakdown(false); }, [session?.current_question_index]);
 
   const sentence = activeQ
     ? activeQ.sentence
@@ -397,6 +430,81 @@ export function TeacherPanel() {
           )}
         </div>
       </div>
+      {/* ── Between-question breakdown overlay ── */}
+      {showBreakdown && session?.phase === "active" && activeQ && sentence && (
+        <div className="fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-poster-bg rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto flex flex-col">
+
+            {/* Sentence with answer filled in */}
+            <div className="px-6 pt-6 pb-4 border-b border-poster-ink/10 text-center">
+              <div className="text-xs font-semibold text-poster-ink/40 uppercase tracking-widest mb-3">
+                Q{session.current_question_index + 1} / {session.questions.length}
+              </div>
+              <div className="text-2xl font-bold text-poster-ink leading-snug">
+                {activeQ.sentence
+                  ? activeQ.sentence.replace("_____", PILL_LABEL[activeQ.correctPillId] ?? activeQ.correctPillId)
+                  : `${sentence.deBefore}${PILL_LABEL[activeQ.correctPillId] ?? "?"}${sentence.deAfter}`}
+              </div>
+              <div className="text-sm text-poster-ink/50 italic mt-1">{sentence.en}</div>
+            </div>
+
+            {/* Who answered what */}
+            <div className="px-6 py-4 space-y-2">
+              <div className="text-[10px] font-semibold text-poster-ink/40 uppercase tracking-widest mb-1">Answers</div>
+              {[...participants.entries()].map(([id, p]) => {
+                const r = responses.find((r) => r.student_id === id && r.question_index === session.current_question_index);
+                return (
+                  <div key={id} className="flex items-center gap-2.5 rounded-full px-3 py-2 bg-white/60">
+                    <img src={avatarSrc(p.avatar)} alt="" className="w-7 h-7" draggable={false} />
+                    <span className="flex-1 text-sm font-semibold text-poster-ink truncate">{p.name}</span>
+                    {r ? (
+                      <>
+                        <span className="text-xs font-bold text-poster-ink/40">{PILL_LABEL[r.answer] ?? r.answer}</span>
+                        <span className={cn("text-base font-bold w-5 text-center", r.is_correct ? "text-poster-teal" : "text-poster-red")}>
+                          {r.is_correct ? "✓" : "✗"}
+                        </span>
+                        {r.points > 0 && <span className="text-xs font-bold text-poster-yellow tabular-nums">+{r.points}</span>}
+                      </>
+                    ) : (
+                      <span className="text-xs text-poster-ink/25 italic">no answer</span>
+                    )}
+                  </div>
+                );
+              })}
+              {participants.size === 0 && (
+                <div className="text-xs text-poster-ink/30 italic text-center">No students</div>
+              )}
+            </div>
+
+            {/* Leaderboard */}
+            {sessionLeaderboard.length > 0 && (
+              <div className="px-6 pb-4 space-y-1.5">
+                <div className="text-[10px] font-semibold text-poster-ink/40 uppercase tracking-widest mb-1">Rankings</div>
+                {sessionLeaderboard.slice(0, 5).map((t, i) => (
+                  <div key={t.id} className={cn("flex items-center gap-2 rounded-full px-3 py-2", i === 0 ? "bg-poster-yellow" : "bg-white/60")}>
+                    <span className={cn("text-sm font-bold w-5 text-center", i === 0 ? "text-white" : "text-poster-ink/30")}>{i + 1}</span>
+                    <img src={avatarSrc(t.avatar)} alt="" className="w-6 h-6" draggable={false} />
+                    <span className={cn("flex-1 text-sm font-semibold", i === 0 ? "text-white" : "text-poster-ink")}>{t.name}</span>
+                    <span className={cn("text-sm font-bold tabular-nums", i === 0 ? "text-white" : "text-poster-ink")}>{t.points}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Next button */}
+            <div className="px-6 pb-6">
+              <button
+                onClick={() => { nextQuestion(); setShowBreakdown(false); }}
+                className="w-full py-3 rounded-full bg-poster-teal text-white font-bold flex items-center justify-center gap-2 hover:bg-poster-teal/90 transition-colors"
+              >
+                <SkipForward size={16} />
+                {session.current_question_index + 1 >= session.questions.length ? "End → Results" : "Next Question →"}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </>
   );
 }
