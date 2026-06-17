@@ -1,5 +1,74 @@
 // @ts-nocheck
 import { useEffect, useMemo, useRef, useState } from "react";
+
+/** Subject+verb prefix for each preposition, used to build a complete sentence. */
+const VERB_CTX: Record<string, { de: string; en: string }> = {
+  für:       { de: "Das ist",        en: "This is"         },
+  gegen:     { de: "Er läuft",       en: "He runs"         },
+  ohne:      { de: "Er kommt",       en: "He comes"        },
+  um:        { de: "Wir gehen",      en: "We walk"         },
+  durch:     { de: "Er fährt",       en: "He drives"       },
+  bis:       { de: "Wir fahren",     en: "We drive"        },
+  mit:       { de: "Er kommt",       en: "He comes"        },
+  zu:        { de: "Sie geht",       en: "She goes"        },
+  von:       { de: "Er kommt",       en: "He comes"        },
+  bei:       { de: "Er wohnt",       en: "He lives"        },
+  nach:      { de: "Sie fährt",      en: "She travels"     },
+  seit:      { de: "Er lernt",       en: "He has learned"  },
+  ab:        { de: "Der Zug fährt",  en: "The train goes"  },
+  aus:       { de: "Er kommt",       en: "He comes"        },
+  gegenüber: { de: "Er sitzt",       en: "He sits"         },
+  außer:     { de: "Alle kommen",    en: "Everyone comes"  },
+  in:        { de: "Er ist",         en: "He is"           },
+  auf:       { de: "Es liegt",       en: "It is"           },
+  an:        { de: "Er steht",       en: "He stands"       },
+  unter:     { de: "Es liegt",       en: "It is"           },
+  neben:     { de: "Er steht",       en: "He stands"       },
+  hinter:    { de: "Er wartet",      en: "He waits"        },
+  über:      { de: "Er fliegt",      en: "He flies"        },
+  vor:       { de: "Er steht",       en: "He stands"       },
+  zwischen:  { de: "Es liegt",       en: "It is"           },
+};
+
+const PREP_EN: Record<string, string> = {
+  für: "for", gegen: "against", ohne: "without", um: "around",
+  durch: "through", bis: "to", mit: "with", zu: "to", von: "from",
+  bei: "with", nach: "to", seit: "since", ab: "from", aus: "from",
+  gegenüber: "across from", außer: "except", in: "in", auf: "on",
+  an: "at", unter: "under", neben: "next to", hinter: "behind",
+  über: "over", vor: "in front of", zwischen: "between",
+};
+
+const NOM_EN: Record<string, string> = {
+  bin: "am", bist: "are", ist: "is", sind: "are", seid: "are",
+};
+
+function buildSentence(q: any): { de: string; en: string } {
+  const prep = q.prep.token;
+  // Nominativ: blank is the subject
+  if (q.prep.case === "nom") {
+    const verbEn = NOM_EN[prep] ?? prep;
+    return {
+      de: `___ ${prep} ${q.suffix ?? ""}`.trim() + ".",
+      en: `___ ${verbEn} ${q.suffixEn ?? ""}`.trim() + ".",
+    };
+  }
+  const ctx = VERB_CTX[prep] ?? { de: "Er geht", en: "He goes" };
+  const prepEn = PREP_EN[prep] ?? prep;
+  if (q.kind === "pronoun") {
+    return {
+      de: `${ctx.de} ${prep} ___.`,
+      en: `${ctx.en} ${prepEn} ___.`,
+    };
+  }
+  // article question — blank the article, keep the noun
+  const sfxDe = q.suffix ? " " + q.suffix : "";
+  const sfxEn = q.suffixEn ? " " + q.suffixEn : "";
+  return {
+    de: `${ctx.de} ${prep} ___ ${q.nounDe}${sfxDe}.`,
+    en: `${ctx.en} ${prepEn} ___ ${q.nounEn}${sfxEn}.`,
+  };
+}
 import { cn } from "@/lib/utils";
 import QRCode from "react-qr-code";
 import { avatarSrc } from "./avatars";
@@ -170,15 +239,7 @@ export function TeacherPanel() {
     ? responses.filter((r) => r.question_index === session.current_question_index).length
     : 0;
 
-  // Current question prompt
-  const prompt = activeQ
-    ? (activeQ.kind === "pronoun"
-        ? `${activeQ.prefix ?? ""} ${activeQ.prep.token} ___ ${activeQ.suffix ?? ""}`.trim()
-        : `${activeQ.prefix ?? ""} ${activeQ.prep.token} ___ ${activeQ.nounDe}${activeQ.suffix ? " " + activeQ.suffix : ""}`.trim())
-    : null;
-  const promptEn = activeQ
-    ? (activeQ.kind === "pronoun" ? activeQ.targetEn : `${activeQ.nounArticle} ${activeQ.nounEn}`)
-    : null;
+  const sentence = activeQ ? buildSentence(activeQ) : null;
 
   return (
     <>
@@ -193,22 +254,22 @@ export function TeacherPanel() {
       </div>
 
       {/* ── Left teacher panel: question → controls ── */}
-      <div className="fixed left-0 top-[52px] bottom-0 w-80 z-50 flex flex-col p-4 gap-3 pointer-events-none">
+      <div className="fixed left-0 top-[52px] bottom-0 w-[380px] z-50 flex flex-col p-4 gap-3 pointer-events-none">
 
         {/* Question text — floats over cheatsheet, grows to fill space */}
         <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 px-2">
-          {activeQ && (
+          {activeQ && sentence && (
             <>
               <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold bg-white/70 backdrop-blur-sm rounded-full px-3 py-1">
                 Q{session.current_question_index + 1} / {session.questions.length}
                 {" · "}{answeredThisQ} / {participants.size} answered
               </div>
-              <div className="text-6xl font-bold text-poster-ink leading-tight tracking-tight drop-shadow-sm">
-                {prompt}
+              <div className="text-5xl font-bold text-poster-ink leading-tight tracking-tight drop-shadow-sm">
+                {sentence.de}
               </div>
-              {promptEn && (
-                <div className="text-xl text-poster-ink/60 font-medium drop-shadow-sm">{promptEn}</div>
-              )}
+              <div className="text-lg text-poster-ink/55 font-medium drop-shadow-sm italic">
+                {sentence.en}
+              </div>
             </>
           )}
         </div>
