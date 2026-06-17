@@ -163,6 +163,17 @@ export const submitResponse = createServerFn({ method: "POST" })
     const q = (sess.questions as any[])?.[data.questionIndex];
     if (!q) throw new Error("Question missing");
 
+    // Check for existing attempt by this student on this question.
+    const { data: existing } = await sb
+      .from("quiz_responses")
+      .select("is_correct")
+      .eq("session_id", data.sessionId)
+      .eq("student_id", data.studentId)
+      .eq("question_index", data.questionIndex)
+      .maybeSingle();
+    if (existing?.is_correct === true) throw new Error("Already answered correctly");
+
+    const isSecondAttempt = !!existing;
     const startedAt = sess.question_started_at ? new Date(sess.question_started_at).getTime() : Date.now();
     const elapsed = Math.max(0, Date.now() - startedAt);
     const timerMaxMs = (sess.timer_max_seconds || 30) * 1000;
@@ -170,7 +181,7 @@ export const submitResponse = createServerFn({ method: "POST" })
     let points = 0;
     if (correct) {
       const ratio = Math.max(0, 1 - elapsed / timerMaxMs);
-      points = Math.round(1000 * ratio) + 500;
+      points = Math.max(0, Math.round(1000 * ratio) + 500 - (isSecondAttempt ? 500 : 0));
     }
 
     const name = String(data.studentName ?? "").trim().slice(0, 30);

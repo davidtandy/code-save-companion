@@ -23,16 +23,21 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
 
   // Center-screen result popup state
   const [resultPopup, setResultPopup] = useState<{ correct: boolean; points: number; show: boolean } | null>(null);
-  const popupShownRef = useRef(-1);
+  const popupShownRef = useRef<string>("");
 
   const idx = session?.current_question_index ?? 0;
   const q = session?.questions?.[idx];
   const myAnswer = myResponses.find((r) => r.question_index === idx);
   const [optimisticAnswer, setOptimisticAnswer] = useState<string | null>(null);
-  const locked = !!myAnswer || !!optimisticAnswer;
+  const [secondAttemptDone, setSecondAttemptDone] = useState(false);
+
+  // locked = answered correctly, or used both attempts, or mid-submit
+  const locked = (!!myAnswer && myAnswer.is_correct) || secondAttemptDone || !!optimisticAnswer;
 
   // Clear optimistic once real answer arrives from server
   useEffect(() => { if (myAnswer) setOptimisticAnswer(null); }, [myAnswer]);
+  // Reset second-attempt flag when question advances
+  useEffect(() => { setSecondAttemptDone(false); }, [idx]);
   const totalPoints = myResponses
     .filter((r) => r.question_index >= 0)
     .reduce((sum, r) => sum + (r.points || 0), 0);
@@ -52,12 +57,21 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
   const elapsed = Math.max(0, now - startedAt);
   const timeRatio = Math.max(0, Math.min(1, 1 - elapsed / timerMaxMs));
 
+  function showPopup(correct: boolean, points: number, key: string) {
+    popupShownRef.current = key;
+    setResultPopup({ correct, points, show: true });
+    setTimeout(() => setResultPopup((p) => p ? { ...p, show: false } : p), 1300);
+    setTimeout(() => setResultPopup(null), 1800);
+  }
+
   async function handleAnswer(pillId: string) {
     if (!session || locked || submitting) return;
-    setOptimisticAnswer(pillId); // lock UI instantly
+    const isSecondAttempt = !!myAnswer && !myAnswer.is_correct;
+    if (isSecondAttempt) setSecondAttemptDone(true);
+    setOptimisticAnswer(pillId);
     setSubmitting(true);
     try {
-      await submitFn({
+      const result = await submitFn({
         data: {
           sessionId: session.id,
           studentId: identity.student_id,
@@ -67,22 +81,22 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
           answer: pillId,
         },
       });
+      // Show popup immediately from server result — no poll-cycle delay
+      showPopup(result.is_correct, result.points || 0, `${idx}:${pillId}`);
     } catch {
-      setOptimisticAnswer(null); // revert on error
+      setOptimisticAnswer(null);
+      if (isSecondAttempt) setSecondAttemptDone(false);
     }
     setSubmitting(false);
   }
 
-  // Show center-screen result popup once per question when answer arrives.
+  // Fallback: show popup if myAnswer arrives (e.g. after page reload) and wasn't already shown.
   useEffect(() => {
-    if (myAnswer && popupShownRef.current !== idx) {
-      popupShownRef.current = idx;
-      setResultPopup({ correct: myAnswer.is_correct, points: myAnswer.points || 0, show: true });
-      const t1 = setTimeout(() => setResultPopup((p) => p ? { ...p, show: false } : p), 1300);
-      const t2 = setTimeout(() => setResultPopup(null), 1800);
-      return () => { clearTimeout(t1); clearTimeout(t2); };
-    }
-  }, [myAnswer, idx]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!myAnswer) return;
+    const key = `${idx}:${myAnswer.answer}`;
+    if (popupShownRef.current === key) return;
+    showPopup(myAnswer.is_correct, myAnswer.points || 0, key);
+  }, [myAnswer?.answer, idx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Register or release the cheatsheet pill-tap intercept.
   useEffect(() => {
@@ -249,9 +263,12 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
             {totalPoints} pts
           </div>
         </div>
-        {/* Question prompt — hidden once locked */}
+        {/* Question prompt — hidden once fully locked */}
         {!locked && (
           <div className="px-4 pb-3 text-center">
+            {myAnswer && !myAnswer.is_correct && (
+              <div className="text-xs font-semibold text-poster-red mb-1">Wrong — one try left (−500 pts)</div>
+            )}
             <div className="text-lg font-bold text-poster-ink leading-tight">{prompt}</div>
             <div className="text-xs text-poster-ink/50 mt-0.5">{promptEn}</div>
           </div>
