@@ -769,7 +769,7 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
     if (!panState.current.active) return;
     const dx = e.clientX - panState.current.startX;
     const dy = e.clientY - panState.current.startY;
-    if (Math.hypot(dx, dy) > 4) panState.current.moved = true;
+    if (Math.hypot(dx, dy) > 8) panState.current.moved = true;
     setPan({ x: panState.current.baseX + dx, y: panState.current.baseY + dy });
   };
 

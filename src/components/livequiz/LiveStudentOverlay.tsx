@@ -245,9 +245,6 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
           <div className="px-4 pb-3 text-center">
             <div className="text-lg font-bold text-poster-ink leading-tight">{prompt}</div>
             <div className="text-xs text-poster-ink/50 mt-0.5">{promptEn}</div>
-            <div className="text-[11px] text-poster-ink/30 mt-1">
-              Tap the right pill — tap again to confirm
-            </div>
           </div>
         )}
         {/* Waiting indicator replaces prompt once locked */}
