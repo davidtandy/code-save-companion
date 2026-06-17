@@ -372,6 +372,15 @@ body {
   pointer-events: none !important;
 }
 
+/* Rank change indicator — fades in when statsExpanded triggers */
+@keyframes rank-change-appear {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.rank-change {
+  animation: rank-change-appear 0.35s ease-out both;
+}
+
 /* Grey out prep group containers when their pills are eliminated */
 [data-group="g-akk-prep"],
 [data-group="g-dat-prep"],

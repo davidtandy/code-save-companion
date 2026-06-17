@@ -49,6 +49,7 @@ export function TeacherPreviewPanel() {
   const [questionStartedAt, setQuestionStartedAt] = useState<number>(Date.now());
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [statsExpanded, setStatsExpanded] = useState(false);
+  const [prevRankOrder, setPrevRankOrder] = useState<string[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -100,7 +101,11 @@ export function TeacherPreviewPanel() {
   }, [timerExpired, phase, currentIdx]);
 
   // Reset breakdown when question advances
-  useEffect(() => { setShowBreakdown(false); setStatsExpanded(false); }, [currentIdx]);
+  useEffect(() => {
+    setPrevRankOrder(sessionLeaderboard.map((t) => t.id));
+    setShowBreakdown(false);
+    setStatsExpanded(false);
+  }, [currentIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Expand stats panel 2.5s after breakdown
   useEffect(() => {
@@ -270,14 +275,23 @@ export function TeacherPreviewPanel() {
                   {sessionLeaderboard.length > 0 && (
                     <div className="space-y-1">
                       <div className="text-[10px] uppercase tracking-widest text-poster-ink/40 font-semibold">Rankings</div>
-                      {sessionLeaderboard.slice(0, 5).map((t, i) => (
-                        <div key={t.id} className={cn("flex items-center gap-2 rounded-full px-3 py-1.5", i === 0 ? "bg-poster-yellow" : "bg-white/60")}>
-                          <span className={cn("text-xs font-bold w-4 text-center", i === 0 ? "text-white" : "text-poster-ink/30")}>{i + 1}</span>
-                          <img src={avatarSrc(t.avatar)} alt="" className="w-5 h-5" draggable={false} />
-                          <span className={cn("flex-1 text-sm font-semibold", i === 0 ? "text-white" : "text-poster-ink")}>{t.name}</span>
-                          <span className={cn("text-sm font-bold tabular-nums", i === 0 ? "text-white" : "text-poster-ink")}>{t.points}</span>
-                        </div>
-                      ))}
+                      {sessionLeaderboard.slice(0, 5).map((t, i) => {
+                        const prevRank = prevRankOrder.indexOf(t.id);
+                        const change = prevRank === -1 ? 0 : prevRank - i;
+                        return (
+                          <div key={t.id} className={cn("flex items-center gap-2 rounded-full px-3 py-1.5", i === 0 ? "bg-poster-yellow" : "bg-white/60")}>
+                            <span className={cn("text-xs font-bold w-4 text-center", i === 0 ? "text-white" : "text-poster-ink/30")}>{i + 1}</span>
+                            <img src={avatarSrc(t.avatar)} alt="" className="w-5 h-5" draggable={false} />
+                            <span className={cn("flex-1 text-sm font-semibold", i === 0 ? "text-white" : "text-poster-ink")}>{t.name}</span>
+                            {statsExpanded && change !== 0 && (
+                              <span className={cn("rank-change text-xs font-bold tabular-nums", change > 0 ? "text-poster-teal" : "text-poster-red")}>
+                                {change > 0 ? `+${change}` : change}
+                              </span>
+                            )}
+                            <span className={cn("text-sm font-bold tabular-nums", i === 0 ? "text-white" : "text-poster-ink")}>{t.points}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                   {/* Next */}
