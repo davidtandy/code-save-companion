@@ -777,7 +777,16 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
     panState.current.pointers.delete(e.pointerId);
     if (panState.current.pointers.size === 0) {
       panState.current.active = false;
-      if (panState.current.moved) didPanRef.current = true;
+      if (panState.current.moved) {
+        didPanRef.current = true;
+      } else if (liveQuizSubmit.current) {
+        // Fire live-quiz answer on pointerUp (before synthetic click) for zero perceived delay
+        const el = (e.target as HTMLElement).closest("[data-cell-id]") as HTMLElement | null;
+        if (el?.dataset.cellId) {
+          liveQuizSubmit.current(el.dataset.cellId);
+          didPanRef.current = true; // suppress the subsequent click event
+        }
+      }
     }
   };
 

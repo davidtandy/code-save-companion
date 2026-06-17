@@ -28,7 +28,11 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
   const idx = session?.current_question_index ?? 0;
   const q = session?.questions?.[idx];
   const myAnswer = myResponses.find((r) => r.question_index === idx);
-  const locked = !!myAnswer;
+  const [optimisticAnswer, setOptimisticAnswer] = useState<string | null>(null);
+  const locked = !!myAnswer || !!optimisticAnswer;
+
+  // Clear optimistic once real answer arrives from server
+  useEffect(() => { if (myAnswer) setOptimisticAnswer(null); }, [myAnswer]);
   const totalPoints = myResponses
     .filter((r) => r.question_index >= 0)
     .reduce((sum, r) => sum + (r.points || 0), 0);
@@ -50,6 +54,7 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
 
   async function handleAnswer(pillId: string) {
     if (!session || locked || submitting) return;
+    setOptimisticAnswer(pillId); // lock UI instantly
     setSubmitting(true);
     try {
       await submitFn({
@@ -62,7 +67,9 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
           answer: pillId,
         },
       });
-    } catch {}
+    } catch {
+      setOptimisticAnswer(null); // revert on error
+    }
     setSubmitting(false);
   }
 
