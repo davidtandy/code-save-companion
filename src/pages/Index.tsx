@@ -21,7 +21,7 @@ import { QuizExplainerCard } from "@/components/poster/quiz/QuizExplainerCard";
 import { FlourishTuner } from "@/components/poster/quiz/FlourishTuner";
 import { LoadFlickerTuner } from "@/components/poster/quiz/LoadFlickerTuner";
 import { IntroTour, TOUR_STEPS } from "@/components/poster/IntroTour";
-import { usePortraitMobile } from "@/hooks/usePortraitMobile";
+import { usePortraitMobile, useIsLandscapeMobile } from "@/hooks/usePortraitMobile";
 import { MobilePosterSlider, MOBILE_SLIDER_BAR_H } from "@/components/poster/MobilePosterSlider";
 import { VerbCloudOverlay } from "@/components/poster/VerbCloudOverlay";
 import { WFragenGame, type WFragenHandle } from "@/components/poster/quiz/WFragenGame";
@@ -152,6 +152,8 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
   const [tourStep, setTourStep] = useState(0);
   /** Portrait mobile slider state. */
   const isPortraitMobile = usePortraitMobile();
+  const isLandscapeMobile = useIsLandscapeMobile();
+  const quizFillMode = !!liveStudent && isLandscapeMobile;
   const [infoLayout, setInfoLayout] = useState(1);
   /** True once the zoom-in animation completes; gates InfoSheet visibility on mobile. */
   const [mobileInfoVisible, setMobileInfoVisible] = useState(false);
@@ -711,14 +713,15 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
     const fit = () => {
       const stage = stageRef.current?.getBoundingClientRect();
       if (!stage) return;
-      const margin = 16;
-      const s = Math.min(1, (stage.width - margin * 2) / POSTER_W, (stage.height - margin * 2) / POSTER_H);
+      const margin = quizFillMode ? 4 : 16;
+      const posterH = quizFillMode ? POSTER_H - 120 : POSTER_H;
+      const s = Math.min(1, (stage.width - margin * 2) / POSTER_W, (stage.height - margin * 2) / posterH);
       setFitScale(s);
     };
     fit();
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
-  }, []);
+  }, [quizFillMode]);
 
   /** Always-on pan offset (px, in stage coords). */
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -890,6 +893,7 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
         identity={liveStudent}
         onLeave={onLiveLeave ?? (() => {})}
         onSetSubmit={(fn) => { liveQuizSubmit.current = fn; }}
+        quizFillMode={quizFillMode}
       />
     )}
     {!liveStudent && !liveTeacher && showWelcome && (
@@ -920,7 +924,7 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
         if (level !== 0) goOverview();
       }}
     >
-      <header className="shrink-0 bg-poster-bg/95 backdrop-blur border-b border-poster-ink/10 px-3 py-2 flex items-center justify-between gap-2">
+      <header className="shrink-0 bg-poster-bg/95 backdrop-blur border-b border-poster-ink/10 px-3 py-2 flex items-center justify-between gap-2" style={quizFillMode ? { display: "none" } : undefined}>
         <div className="font-display font-bold text-poster-teal text-sm leading-tight">
           German Grammar Cheatsheet
         </div>
@@ -1102,7 +1106,7 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
           <div
             style={{
               width: POSTER_W,
-              height: POSTER_H,
+              height: quizFillMode ? POSTER_H - 120 : POSTER_H,
               transform: `translate(${pan.x}px, ${pan.y}px) scale(${renderedScale})`,
               transformOrigin: "center center",
             }}
@@ -1132,6 +1136,7 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
               quizBlur={quiz.active}
               quizActive={quiz.active}
               hidePossessives={!!liveStudent}
+              quizFill={quizFillMode}
             />
           </div>
         </div>

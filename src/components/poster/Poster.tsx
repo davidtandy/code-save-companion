@@ -109,6 +109,7 @@ type Props = {
     onColumnTap: (columnType: "defArticles" | "indefArticles") => "correct" | "wrong";
   } | null;
   hidePossessives?: boolean;
+  quizFill?: boolean;
 };
 
 /* ---------- Atoms ---------- */
@@ -400,7 +401,7 @@ const LegendSwatch = ({
 /* ---------- Main poster ---------- */
 
 export const Poster = forwardRef<PosterHandle, Props>(
-  ({ activeCase, activeWordId, morphContextId = null, pinnedPossId = null, onTapCase, onTapCaseIcon, onTapWord, onTapBackground, onTapVerbCloud, genderMode = "off", morphMap = null, flourish = { epoch: 0, indices: new Map() }, quizBlur = false, quizActive = false, slimPills = false, pillPadH = 28, pillPadV = 32, caseGap = 16, mobileZoomedCase, caseHoverDim = false, pinnedCase = null, learnDim = null, learnOverlay = null, hidePossessives = false }, ref) => {
+  ({ activeCase, activeWordId, morphContextId = null, pinnedPossId = null, onTapCase, onTapCaseIcon, onTapWord, onTapBackground, onTapVerbCloud, genderMode = "off", morphMap = null, flourish = { epoch: 0, indices: new Map() }, quizBlur = false, quizActive = false, slimPills = false, pillPadH = 28, pillPadV = 32, caseGap = 16, mobileZoomedCase, caseHoverDim = false, pinnedCase = null, learnDim = null, learnOverlay = null, hidePossessives = false, quizFill = false }, ref) => {
     const rootRef = useRef<HTMLDivElement>(null);
     const cellRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -833,7 +834,7 @@ export const Poster = forwardRef<PosterHandle, Props>(
       <div
         ref={rootRef}
         className={cn("relative bg-poster-bg select-none", (legendHover === "formal" || legendStuck.has("formal")) && "formal-active", quizBlur && "quiz-active")}
-        style={{ width: POSTER_W, height: POSTER_H, padding: `${pillPadV}px ${pillPadH}px` }}
+        style={{ width: POSTER_W, height: quizFill ? POSTER_H - 120 : POSTER_H, padding: `${pillPadV}px ${pillPadH}px` }}
         onClick={(e) => {
           const t = e.target as HTMLElement;
           if (!t.closest("button")) onTapBackground?.();
@@ -850,6 +851,7 @@ export const Poster = forwardRef<PosterHandle, Props>(
             className={cn("relative z-10 transition-opacity duration-200", ((pinnedCase !== null ? pinnedCase !== "akk" : (isMobilePoss && !isZoomed || caseHoverDim) && hoverDimCase !== null && hoverDimCase !== "akk") || (!!learnDim && overlayCaseHover !== null && overlayCaseHover !== "akk")) && (learnDim ? "learn-dim" : "opacity-40"))}
             onMouseEnter={() => { if (!pinnedCase && (isMobilePoss && !isZoomed || caseHoverDim)) setHoverDimCase("akk"); }}
           >
+            {!quizFill && (
             <button
               onClick={(e) => { onTapCase("akk"); onTapCaseIcon?.("akk", e.currentTarget.getBoundingClientRect()); }}
               className="w-full flex flex-col items-center mb-2 active:scale-95 transition-transform"
@@ -857,6 +859,7 @@ export const Poster = forwardRef<PosterHandle, Props>(
               <img src={bicycle} alt="Bicycle — Akkusativ WEN • WOHIN (direct object)"
                    className="h-28 object-contain" draggable={false} />
             </button>
+            )}
 
             {/* Pronoun stack + red prep strip aligned to top of "ich" */}
             <div className="flex gap-1.5 items-start">
@@ -913,6 +916,7 @@ export const Poster = forwardRef<PosterHandle, Props>(
             className={cn("relative z-10 transition-opacity duration-200", ((pinnedCase !== null ? pinnedCase !== "nom" : (isMobilePoss && !isZoomed || caseHoverDim) && hoverDimCase !== null && hoverDimCase !== "nom") || (!!learnDim && overlayCaseHover !== null && overlayCaseHover !== "nom")) && (learnDim ? "learn-dim" : "opacity-40"))}
             onMouseEnter={() => { if (!pinnedCase && (isMobilePoss && !isZoomed || caseHoverDim)) setHoverDimCase("nom"); }}
           >
+            {!quizFill && (
             <button
               onClick={(e) => { onTapCase("nom"); onTapCaseIcon?.("nom", e.currentTarget.getBoundingClientRect()); }}
               className="w-full flex flex-col items-center mb-2 active:scale-95 transition-transform"
@@ -920,6 +924,7 @@ export const Poster = forwardRef<PosterHandle, Props>(
               <img src={seinCloud} alt="Chef hat with sein cloud — Nominativ WER (subject / to be)"
                    className="h-28 object-contain" draggable={false} />
             </button>
+            )}
 
             {/* Pronoun + ending pairs (each pair centered as a group) */}
             <div data-group="g-nom-pron" className="flex flex-col gap-1.5 items-center">
@@ -971,6 +976,7 @@ export const Poster = forwardRef<PosterHandle, Props>(
             className={cn("relative z-10 transition-opacity duration-200", ((pinnedCase !== null ? pinnedCase !== "dat" : (isMobilePoss && !isZoomed || caseHoverDim) && hoverDimCase !== null && hoverDimCase !== "dat") || (!!learnDim && overlayCaseHover !== null && overlayCaseHover !== "dat")) && (learnDim ? "learn-dim" : "opacity-40"))}
             onMouseEnter={() => { if (!pinnedCase && (isMobilePoss && !isZoomed || caseHoverDim)) setHoverDimCase("dat"); }}
           >
+            {!quizFill && (
             <button
               onClick={(e) => { onTapCase("dat"); onTapCaseIcon?.("dat", e.currentTarget.getBoundingClientRect()); }}
               className="w-full flex flex-col items-center mb-2 active:scale-95 transition-transform"
@@ -978,6 +984,7 @@ export const Poster = forwardRef<PosterHandle, Props>(
               <img src={envelope} alt="Envelope — Dativ WEM • WO • WANN"
                    className="h-28 object-contain" draggable={false} />
             </button>
+            )}
 
             {/* Pronoun stack + red prep strip aligned to top of "mir" */}
             <div className="flex gap-1.5 items-start">

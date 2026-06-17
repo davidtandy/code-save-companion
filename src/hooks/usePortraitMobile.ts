@@ -22,3 +22,26 @@ export function usePortraitMobile(phoneMaxWidth = 820): boolean {
 
   return value;
 }
+
+export function useIsLandscapeMobile(phoneMaxHeight = 500): boolean {
+  const [value, setValue] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(orientation: landscape)").matches && window.innerHeight <= phoneMaxHeight;
+  });
+
+  useEffect(() => {
+    const check = () => {
+      setValue(
+        window.matchMedia("(orientation: landscape)").matches && window.innerHeight <= phoneMaxHeight,
+      );
+    };
+    window.addEventListener("resize", check);
+    window.addEventListener("orientationchange", check);
+    return () => {
+      window.removeEventListener("resize", check);
+      window.removeEventListener("orientationchange", check);
+    };
+  }, [phoneMaxHeight]);
+
+  return value;
+}

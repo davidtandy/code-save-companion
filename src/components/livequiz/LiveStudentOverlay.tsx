@@ -13,9 +13,10 @@ type Props = {
   onLeave: () => void;
   /** Called with a function when we want to intercept cheatsheet pill taps, null to release. */
   onSetSubmit: (fn: ((pillId: string) => void) | null) => void;
+  quizFillMode?: boolean;
 };
 
-export function LiveStudentOverlay({ identity, onLeave, onSetSubmit }: Props) {
+export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMode = false }: Props) {
   const { session, myResponses, leaderboard, joinedCount, loading } = useLiveQuiz();
   const [submitting, setSubmitting] = useState(false);
   const submitFn = useServerFn(submitResponse);
@@ -196,7 +197,24 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit }: Props) {
 
   return (
     <>
-      {/* Fixed header: timer bar + student info + question prompt */}
+      {quizFillMode ? (
+        <>
+          {/* Minimal: just the timer bar at very top */}
+          <div className="fixed top-0 inset-x-0 z-50 h-1 bg-poster-ink/5">
+            <div
+              className="h-full bg-poster-teal transition-[width] duration-200 ease-linear"
+              style={{ width: `${timeRatio * 100}%` }}
+            />
+          </div>
+          {/* Floating score chip */}
+          <div
+            key={totalPoints}
+            className="fixed top-2 right-2 z-50 px-3 py-1 rounded-full bg-poster-yellow text-white text-sm font-bold tabular-nums pts-pop shadow-md"
+          >
+            {totalPoints} pts
+          </div>
+        </>
+      ) : (
       <div className="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-sm border-b border-poster-ink/10 shadow-sm">
         {/* Timer bar */}
         <div className="h-1 bg-poster-ink/5">
@@ -239,6 +257,7 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit }: Props) {
           </div>
         )}
       </div>
+      )}
 
       {/* Center-screen result popup — appears briefly then fades, never blocks the slider */}
       {resultPopup && (
