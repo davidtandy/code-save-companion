@@ -284,10 +284,12 @@ export function TeacherPanel() {
                 Q{session.current_question_index + 1} / {session.questions.length}
                 {" · "}{answeredThisQ} / {participants.size} answered
               </div>
-              <div className="text-5xl font-bold text-poster-ink leading-tight tracking-tight drop-shadow-sm">
-                {sentence.deBefore}
-                <span className="text-poster-ink/35 italic">{sentence.hint}</span>
-                {sentence.deAfter}
+              <div className="text-5xl font-bold text-poster-ink leading-snug tracking-tight drop-shadow-sm flex flex-col items-center gap-1">
+                {sentence.deBefore && <span>{sentence.deBefore}</span>}
+                <span className="text-poster-ink/35 italic border-b-[3px] border-poster-ink/30 px-4 min-w-[64px] text-center">
+                  {sentence.hint || " "}
+                </span>
+                {sentence.deAfter && <span>{sentence.deAfter.trimStart()}</span>}
               </div>
               <div className="text-2xl text-poster-ink/60 font-medium drop-shadow-sm italic">
                 {sentence.en}
