@@ -163,7 +163,7 @@ export function TeacherPreviewPanel() {
   return (
     <>
       {/* ── QR — fixed top-left ── */}
-      <div className="fixed top-4 left-4 z-[200] flex flex-col items-start gap-1.5 transition-transform duration-200 origin-top-left hover:scale-[2]">
+      <div className="fixed top-4 left-4 z-[150] flex flex-col items-start gap-1.5 transition-transform duration-200 origin-top-left hover:scale-[2]">
         <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold">
           Scan to join!
         </div>
@@ -173,7 +173,8 @@ export function TeacherPreviewPanel() {
       </div>
 
       {/* ── Left panel ── */}
-      <div className="fixed left-0 top-[52px] bottom-0 w-[460px] z-50 flex flex-col p-4 gap-3 pointer-events-none">
+      <div className="fixed left-0 top-[52px] bottom-0 w-[460px] flex flex-col p-4 gap-3 pointer-events-none"
+          style={{ zIndex: statsExpanded ? 200 : 50 }}>
 
         {/* Question sentence */}
         <div
