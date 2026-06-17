@@ -1,33 +1,33 @@
 // @ts-nocheck
 import { useEffect, useMemo, useRef, useState } from "react";
 
-/** Subject+verb prefix for each preposition, used to build a complete sentence. */
-const VERB_CTX: Record<string, { de: string; en: string }> = {
-  für:       { de: "Das ist",        en: "This is"         },
-  gegen:     { de: "Er läuft",       en: "He runs"         },
-  ohne:      { de: "Er kommt",       en: "He comes"        },
-  um:        { de: "Wir gehen",      en: "We walk"         },
-  durch:     { de: "Er fährt",       en: "He drives"       },
-  bis:       { de: "Wir fahren",     en: "We drive"        },
-  mit:       { de: "Er kommt",       en: "He comes"        },
-  zu:        { de: "Sie geht",       en: "She goes"        },
-  von:       { de: "Er kommt",       en: "He comes"        },
-  bei:       { de: "Er wohnt",       en: "He lives"        },
-  nach:      { de: "Sie fährt",      en: "She travels"     },
-  seit:      { de: "Er lernt",       en: "He has learned"  },
-  ab:        { de: "Der Zug fährt",  en: "The train goes"  },
-  aus:       { de: "Er kommt",       en: "He comes"        },
-  gegenüber: { de: "Er sitzt",       en: "He sits"         },
-  außer:     { de: "Alle kommen",    en: "Everyone comes"  },
-  in:        { de: "Er ist",         en: "He is"           },
-  auf:       { de: "Es liegt",       en: "It is"           },
-  an:        { de: "Er steht",       en: "He stands"       },
-  unter:     { de: "Es liegt",       en: "It is"           },
-  neben:     { de: "Er steht",       en: "He stands"       },
-  hinter:    { de: "Er wartet",      en: "He waits"        },
-  über:      { de: "Er fliegt",      en: "He flies"        },
-  vor:       { de: "Er steht",       en: "He stands"       },
-  zwischen:  { de: "Es liegt",       en: "It is"           },
+/** Subject+verb prefix for each preposition. enPrep overrides the default PREP_EN lookup. */
+const VERB_CTX: Record<string, { de: string; en: string; enPrep?: string }> = {
+  für:       { de: "Das ist",        en: "This is"          },
+  gegen:     { de: "Er kämpft",      en: "He competes"      }, // "gegen" = against/versus
+  ohne:      { de: "Er kommt",       en: "He comes"         },
+  um:        { de: "Es geht",        en: "It's",  enPrep: "about" }, // "es geht um" = it's about
+  durch:     { de: "Er geht",        en: "He goes"          },
+  bis:       { de: "Wir fahren",     en: "We drive"         },
+  mit:       { de: "Er kommt",       en: "He comes"         },
+  zu:        { de: "Sie geht",       en: "She goes"         },
+  von:       { de: "Er kommt",       en: "He comes"         },
+  bei:       { de: "Er wohnt",       en: "He lives"         },
+  nach:      { de: "Er fragt",       en: "He asks", enPrep: "about" }, // "fragen nach" = ask about
+  seit:      { de: "Er lernt",       en: "He has studied"   },
+  ab:        { de: "Der Zug fährt",  en: "The train departs" },
+  aus:       { de: "Er kommt",       en: "He comes"         },
+  gegenüber: { de: "Er sitzt",       en: "He sits", enPrep: "across from" },
+  außer:     { de: "Alle kommen",    en: "Everyone comes",  enPrep: "except" },
+  in:        { de: "Er ist",         en: "He is"            },
+  auf:       { de: "Es liegt",       en: "It is"            },
+  an:        { de: "Er steht",       en: "He stands"        },
+  unter:     { de: "Es liegt",       en: "It is"            },
+  neben:     { de: "Er steht",       en: "He stands"        },
+  hinter:    { de: "Er wartet",      en: "He waits"         },
+  über:      { de: "Er fliegt",      en: "He flies"         },
+  vor:       { de: "Er steht",       en: "He stands"        },
+  zwischen:  { de: "Es liegt",       en: "It is"            },
 };
 
 const PREP_EN: Record<string, string> = {
@@ -53,7 +53,7 @@ function articleEn(nounArticle: string): string {
 function buildSentence(q: any): { deBefore: string; hint: string; deAfter: string; en: string } {
   const prep = q.prep.token;
   const ctx = VERB_CTX[prep] ?? { de: "Er geht", en: "He goes" };
-  const prepEn = PREP_EN[prep] ?? prep;
+  const prepEn = ctx.enPrep ?? PREP_EN[prep] ?? prep;
 
   if (q.prep.case === "nom") {
     const verbEn = NOM_EN[prep] ?? prep;
