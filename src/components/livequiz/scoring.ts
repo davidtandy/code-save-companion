@@ -42,6 +42,13 @@ export const PILL_LABEL: Record<string, string> = {
 
 const POSSESSIVE_PILLS = ["pos-mein", "pos-dein", "pos-sein", "pos-unser", "pos-euer", "pos-ihr", "pos-kein"];
 const NOM_ENDING_PILLS = ["nom-end-e", "nom-end-st", "nom-end-t", "nom-end-en", "nom-end-t2", "nom-end-en2"];
+const PREP_PILLS = [
+  "akk-prep-für", "akk-prep-gegen", "akk-prep-um", "akk-prep-bis", "akk-prep-ohne", "akk-prep-durch",
+  "dat-prep-zu", "dat-prep-von", "dat-prep-mit", "dat-prep-bei", "dat-prep-nach", "dat-prep-seit",
+  "dat-prep-ab", "dat-prep-aus", "dat-prep-gegenüber", "dat-prep-außer",
+  "twL-in", "twL-auf", "twL-an", "twL-unter", "twL-neben", "twL-hinter", "twL-unter2", "twL-über", "twL-vor", "twL-zwischen",
+  "twR-in", "twR-auf", "twR-an", "twR-unter", "twR-neben", "twR-hinter", "twR-unter2", "twR-über", "twR-vor", "twR-zwischen",
+];
 
 /** Every pill ID on the cheatsheet, across all cases and row types. */
 export const ALL_PILLS: string[] = [
@@ -49,6 +56,7 @@ export const ALL_PILLS: string[] = [
   ...ARTICLE_PILLS.nom, ...ARTICLE_PILLS.akk, ...ARTICLE_PILLS.dat,
   ...POSSESSIVE_PILLS,
   ...NOM_ENDING_PILLS,
+  ...PREP_PILLS,
 ];
 
 const PRONOUN_ID_SET = new Set<string>([
@@ -93,8 +101,8 @@ export function eliminationOrderFull(q: QuizQuestion): string[] {
 }
 
 /** Absolute-time thresholds for each elimination wave. */
-export const ELIM_T1_MS  =  2000; // nom verb endings (all)
-export const ELIM_T2_MS  =  5000; // possessives (all)
+export const ELIM_T1_MS  =  2000; // possessives + prepositions (all)
+export const ELIM_T2_MS  =  5000; // nom verb endings (all)
 export const ELIM_T3a_MS =  8000; // wrong-type 1/4
 export const ELIM_T3b_MS = 11000; // wrong-type 2/4
 export const ELIM_T3c_MS = 14000; // wrong-type 3/4
@@ -107,8 +115,8 @@ export const ELIM_T5_MS  = 25000; // same-case individuals start
 
 /**
  * Returns the elimination order in 5 tiers:
- *   0: nom verb endings (first — always irrelevant for article questions)
- *   1: possessives (second)
+ *   0: possessives + all prepositions (first — never the answer)
+ *   1: nom verb endings (second)
  *   2: wrong row-type pronouns + nom articles for non-nom questions
  *   3: same type, wrong case
  *   4: same type, same case (direct competitors, last)
@@ -130,8 +138,9 @@ export function eliminationTiersData(q: QuizQuestion): {
   function pillTier(pill: string): number {
     const pillCase = pill.split("-")[0] as CaseKey;
     const pillIsPronoun = PRONOUN_ID_SET.has(pill);
-    if (pill.startsWith("nom-end-")) return 0;
-    if (pill.startsWith("pos-")) return 1;
+    if (pill.startsWith("pos-")) return 0;
+    if (pill.startsWith("akk-prep-") || pill.startsWith("dat-prep-") || pill.startsWith("twL-") || pill.startsWith("twR-")) return 0;
+    if (pill.startsWith("nom-end-")) return 1;
     if (pillIsPronoun !== correctIsPronoun) return 2;
     if (pillCase === "nom" && correctCase !== "nom") return 2;
     if (pillCase !== correctCase) return 3;
@@ -159,8 +168,8 @@ export function eliminationTiersData(q: QuizQuestion): {
 
 /**
  * Given elapsed time, returns how many pills should currently be greyed.
- * t=2s:   nom endings (all)
- * t=5s:   possessives (all)
+ * t=2s:   possessives + prepositions (all)
+ * t=5s:   nom verb endings (all)
  * t=8s:   wrong-type 1/4
  * t=11s:  wrong-type 2/4
  * t=14s:  wrong-type 3/4
