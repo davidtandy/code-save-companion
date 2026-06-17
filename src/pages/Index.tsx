@@ -715,11 +715,13 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
     const fit = () => {
       const stage = stageRef.current?.getBoundingClientRect();
       if (!stage) return;
-      const margin = quizFillMode ? 8 : 16;
-      // In quizFill: fit to pill content area only — padding clips off all four sides
-      const fitW = quizFillMode ? POSTER_W - 56 : POSTER_W;   // 56 = 2 × pillPadH (28px)
-      const fitH = quizFillMode ? POSTER_H - 184 : POSTER_H;  // 184 = 120px icons + 64px v-padding
-      const s = Math.min(1, (stage.width - margin * 2) / fitW, (stage.height - margin * 2) / fitH);
+      const margin = quizFillMode ? 4 : 16;
+      const fitW = quizFillMode ? POSTER_W - 56 : POSTER_W;
+      const fitH = POSTER_H;
+      // quizFill: width-only — top/bottom clip freely, pills fill the screen
+      const s = quizFillMode
+        ? Math.min(1, (stage.width - margin * 2) / fitW)
+        : Math.min(1, (stage.width - margin * 2) / fitW, (stage.height - margin * 2) / fitH);
       setFitScale(s);
     };
     fit();
@@ -1120,7 +1122,7 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
             style={{
               width: POSTER_W,
               height: quizFillMode ? POSTER_H - 120 : POSTER_H,
-              transform: `translate(${pan.x}px, ${pan.y}px) scale(${renderedScale})`,
+              transform: `translate(${pan.x}px, ${pan.y + (quizFillMode ? 40 : 0)}px) scale(${renderedScale})`,
               transformOrigin: "center center",
             }}
             className="relative shrink-0"
