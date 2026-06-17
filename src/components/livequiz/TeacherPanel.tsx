@@ -43,30 +43,50 @@ const NOM_EN: Record<string, string> = {
   bin: "am", bist: "are", ist: "is", sind: "are", seid: "are",
 };
 
-function buildSentence(q: any): { de: string; en: string } {
+function articleEn(nounArticle: string): string {
+  if (!nounArticle || nounArticle === "—") return "";
+  if (["ein", "eine", "einen", "einem", "einer"].includes(nounArticle)) return "a";
+  return "the";
+}
+
+/** Returns sentence parts so the hint word can be rendered greyed in the German blank. */
+function buildSentence(q: any): { deBefore: string; hint: string; deAfter: string; en: string } {
   const prep = q.prep.token;
-  // Nominativ: blank is the subject
-  if (q.prep.case === "nom") {
-    const verbEn = NOM_EN[prep] ?? prep;
-    return {
-      de: `___ ${prep} ${q.suffix ?? ""}`.trim() + ".",
-      en: `___ ${verbEn} ${q.suffixEn ?? ""}`.trim() + ".",
-    };
-  }
   const ctx = VERB_CTX[prep] ?? { de: "Er geht", en: "He goes" };
   const prepEn = PREP_EN[prep] ?? prep;
-  if (q.kind === "pronoun") {
+
+  if (q.prep.case === "nom") {
+    const verbEn = NOM_EN[prep] ?? prep;
+    const hint = q.targetEn ?? "";
+    const sfxDe = q.suffix ? " " + q.suffix : "";
+    const sfxEn = q.suffixEn ? " " + q.suffixEn : "";
     return {
-      de: `${ctx.de} ${prep} ___.`,
-      en: `${ctx.en} ${prepEn} ___.`,
+      deBefore: "",
+      hint,
+      deAfter: ` ${prep}${sfxDe}.`,
+      en: `${hint} ${verbEn}${sfxEn}.`,
     };
   }
-  // article question — blank the article, keep the noun
+
+  if (q.kind === "pronoun") {
+    const hint = q.targetEn ?? "";
+    return {
+      deBefore: `${ctx.de} ${prep} `,
+      hint,
+      deAfter: ".",
+      en: `${ctx.en} ${prepEn} ${hint}.`,
+    };
+  }
+
+  // article question
+  const artEn = articleEn(q.nounArticle);
   const sfxDe = q.suffix ? " " + q.suffix : "";
   const sfxEn = q.suffixEn ? " " + q.suffixEn : "";
   return {
-    de: `${ctx.de} ${prep} ___ ${q.nounDe}${sfxDe}.`,
-    en: `${ctx.en} ${prepEn} ___ ${q.nounEn}${sfxEn}.`,
+    deBefore: `${ctx.de} ${prep} `,
+    hint: artEn,
+    deAfter: ` ${q.nounDe}${sfxDe}.`,
+    en: `${ctx.en} ${prepEn}${artEn ? " " + artEn : ""} ${q.nounEn}${sfxEn}.`,
   };
 }
 import { cn } from "@/lib/utils";
@@ -265,9 +285,11 @@ export function TeacherPanel() {
                 {" · "}{answeredThisQ} / {participants.size} answered
               </div>
               <div className="text-5xl font-bold text-poster-ink leading-tight tracking-tight drop-shadow-sm">
-                {sentence.de}
+                {sentence.deBefore}
+                <span className="text-poster-ink/35 italic">{sentence.hint}</span>
+                {sentence.deAfter}
               </div>
-              <div className="text-lg text-poster-ink/55 font-medium drop-shadow-sm italic">
+              <div className="text-2xl text-poster-ink/60 font-medium drop-shadow-sm italic">
                 {sentence.en}
               </div>
             </>
