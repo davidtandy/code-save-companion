@@ -274,7 +274,7 @@ export function TeacherPanel() {
       </div>
 
       {/* ── Left teacher panel: question → controls ── */}
-      <div className="fixed left-0 top-[52px] bottom-0 w-[380px] z-50 flex flex-col p-4 gap-3 pointer-events-none">
+      <div className="fixed left-0 top-[52px] bottom-0 w-[460px] z-50 flex flex-col p-4 gap-3 pointer-events-none">
 
         {/* Question text — floats over cheatsheet, grows to fill space */}
         <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 px-2">
