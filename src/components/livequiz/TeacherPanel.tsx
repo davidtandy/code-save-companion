@@ -462,8 +462,7 @@ export function TeacherPanel() {
                   {session.phase === "lobby" && (
                     <button
                       onClick={startQuiz}
-                      disabled={participants.size === 0}
-                      className="w-full py-3 rounded-full bg-poster-teal text-white font-bold flex items-center justify-center gap-2 hover:bg-poster-teal/90 disabled:opacity-40 transition-colors"
+                      className="w-full py-3 rounded-full bg-poster-teal text-white font-bold flex items-center justify-center gap-2 hover:bg-poster-teal/90 transition-colors"
                     >
                       <Play size={16} /> Start
                     </button>
