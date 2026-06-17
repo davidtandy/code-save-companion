@@ -133,6 +133,7 @@ export function TeacherPanel() {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [statsExpanded, setStatsExpanded] = useState(false);
   const [prevRankOrder, setPrevRankOrder] = useState<string[]>([]);
+  const [pillAvatars, setPillAvatars] = useState<{ key: string; x: number; y: number; avatarKey: string; delayMs: number }[]>([]);
   const creatingRef = useRef(false); // synchronous guard against double-submit
 
   const createFn     = useServerFn(createLiveSession);
@@ -320,6 +321,37 @@ export function TeacherPanel() {
   useEffect(() => {
     if (!showBreakdown) { setStatsExpanded(false); return; }
     const t = setTimeout(() => setStatsExpanded(true), 2500);
+    return () => clearTimeout(t);
+  }, [showBreakdown, session?.current_question_index]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Scatter avatars onto their chosen pills after breakdown
+  useEffect(() => {
+    if (!showBreakdown) { setPillAvatars([]); return; }
+    const t = setTimeout(() => {
+      const qi = session?.current_question_index ?? 0;
+      const cur = responses.filter((r) => r.question_index === qi);
+      const byPill = new Map<string, string[]>();
+      for (const r of cur) {
+        if (!byPill.has(r.answer)) byPill.set(r.answer, []);
+        byPill.get(r.answer)!.push(r.student_avatar);
+      }
+      const avatars: typeof pillAvatars = [];
+      let gi = 0;
+      for (const [pillId, keys] of byPill) {
+        const el = document.querySelector(`[data-cell-id="${pillId}"]`);
+        if (!el) { gi += keys.length; continue; }
+        const rect = el.getBoundingClientRect();
+        const spacing = 22;
+        const totalW = (keys.length - 1) * spacing;
+        const cx = rect.left + rect.width / 2 - totalW / 2 - 12;
+        const cy = rect.top + rect.height / 2 - 12;
+        keys.forEach((avatarKey, i) => {
+          avatars.push({ key: `${pillId}-${i}`, x: cx + i * spacing, y: cy, avatarKey, delayMs: gi * 55 });
+          gi++;
+        });
+      }
+      setPillAvatars(avatars);
+    }, 400);
     return () => clearTimeout(t);
   }, [showBreakdown, session?.current_question_index]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -536,6 +568,15 @@ export function TeacherPanel() {
           )}
         </div>
       </div>
+      {pillAvatars.map(({ key, x, y, avatarKey, delayMs }) => (
+        <div
+          key={key}
+          className="fixed z-[300] pointer-events-none avatar-scatter"
+          style={{ left: x, top: y, animationDelay: `${delayMs}ms` }}
+        >
+          <img src={avatarSrc(avatarKey)} alt="" className="w-6 h-6 rounded-full shadow-lg ring-2 ring-white" draggable={false} />
+        </div>
+      ))}
     </>
   );
 }
