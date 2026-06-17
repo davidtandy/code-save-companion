@@ -111,7 +111,7 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
   // Progressively grey out wrong pills: groups at t=2s and t=4s, then individual pills from t=6s.
   const tiers = q ? eliminationTiersData(q) : null;
   const cappedElimCount = (session?.phase === "active" && !locked && tiers)
-    ? computeElimCount(elapsed, timerMaxMs, tiers.tier0Count, tiers.tier1Count, tiers.tier2Count, tiers.tier3Count)
+    ? computeElimCount(elapsed, timerMaxMs, tiers.tier0Count, tiers.tier1Count, tiers.tier2Count)
     : 0;
 
   useEffect(() => {
