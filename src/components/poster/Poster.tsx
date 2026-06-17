@@ -1204,7 +1204,8 @@ export const Poster = forwardRef<PosterHandle, Props>(
           );
         })}
 
-        {/* Footer (tightened up — content above no longer needs the extra space) */}
+        {!quizFill && (<>
+        {/* Footer */}
         <div className="relative z-10 mt-16 bg-poster-teal rounded-sm py-1.5 text-center" style={{ width: `calc(100% + ${2 * caseGap}px)` }}>
           <a
             href="https://www.genau-genau.com"
@@ -1220,6 +1221,7 @@ export const Poster = forwardRef<PosterHandle, Props>(
         <div className="text-[10px] text-poster-ink/50 mt-2 text-center">
           © Wekas Gaba — recreated as an interactive study aid.
         </div>
+        </>)}
       </div>
       </DimCtx.Provider>
       </SlimCtx.Provider>
