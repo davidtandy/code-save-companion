@@ -342,14 +342,14 @@ export function TeacherPanel() {
                 Q{session.current_question_index + 1} / {session.questions.length}
                 {" · "}{answeredThisQ} / {participants.size} answered
               </div>
-              <div className="text-5xl font-bold text-poster-ink leading-snug tracking-tight drop-shadow-sm flex flex-col items-center gap-1">
+              <div className="text-5xl font-bold text-poster-ink leading-snug tracking-tight drop-shadow-sm">
                 {sentence.deBefore && <span>{sentence.deBefore}</span>}
                 {showBreakdown ? (
-                  <span key="filled" className="answer-fill text-poster-teal px-4 min-w-[64px] text-center">
+                  <span key="filled" className="answer-fill text-poster-teal px-2">
                     {PILL_LABEL[activeQ.correctPillId] ?? activeQ.correctPillId}
                   </span>
                 ) : (
-                  <span key="blank" className="text-poster-ink/35 italic px-4 min-w-[64px] text-center" style={{ borderBottom: "3px solid black" }}>
+                  <span key="blank" className="text-poster-ink/35 italic px-2 inline-block min-w-[64px] text-center" style={{ borderBottom: "3px solid black" }}>
                     {sentence.hint || " "}
                   </span>
                 )}
