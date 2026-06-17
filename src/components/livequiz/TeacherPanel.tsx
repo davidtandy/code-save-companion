@@ -335,92 +335,35 @@ export function TeacherPanel() {
       {/* ── Left teacher panel: question → controls ── */}
       <div className="fixed left-0 top-[52px] bottom-0 w-[460px] z-50 flex flex-col p-4 gap-3 pointer-events-none">
 
-        {/* Question text — breakdown OR question, left panel */}
-        <div className="flex-1 flex flex-col min-h-0">
-          {showBreakdown && session?.phase === "active" && activeQ && sentence ? (
-            <div className="flex-1 pointer-events-auto bg-poster-bg/97 backdrop-blur-sm rounded-2xl shadow-2xl overflow-y-auto flex flex-col min-h-0">
-              <div className="px-5 pt-5 pb-3 border-b border-poster-ink/10 text-center">
-                <div className="text-[10px] font-semibold text-poster-ink/40 uppercase tracking-widest mb-2">
-                  Q{session.current_question_index + 1} / {session.questions.length}
-                </div>
-                <div className="text-xl font-bold text-poster-ink leading-snug">
-                  {activeQ.sentence
-                    ? activeQ.sentence.replace("_____", PILL_LABEL[activeQ.correctPillId] ?? activeQ.correctPillId)
-                    : `${sentence.deBefore}${PILL_LABEL[activeQ.correctPillId] ?? "?"}${sentence.deAfter}`}
-                </div>
-                <div className="text-sm text-poster-ink/50 italic mt-1">{sentence.en}</div>
+        {/* Question sentence — blank fills in with answer on breakdown */}
+        <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 px-2">
+          {activeQ && sentence && (
+            <>
+              <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold bg-white/70 backdrop-blur-sm rounded-full px-3 py-1">
+                Q{session.current_question_index + 1} / {session.questions.length}
+                {" · "}{answeredThisQ} / {participants.size} answered
               </div>
-              <div className="px-4 py-3 space-y-1.5">
-                <div className="text-[10px] font-semibold text-poster-ink/40 uppercase tracking-widest mb-1">Answers</div>
-                {[...participants.entries()].map(([id, p]) => {
-                  const r = responses.find((r) => r.student_id === id && r.question_index === session.current_question_index);
-                  return (
-                    <div key={id} className="flex items-center gap-2 rounded-full px-3 py-1.5 bg-white/60">
-                      <img src={avatarSrc(p.avatar)} alt="" className="w-6 h-6" draggable={false} />
-                      <span className="flex-1 text-sm font-semibold text-poster-ink truncate">{p.name}</span>
-                      {r ? (
-                        <>
-                          <span className="text-xs font-bold text-poster-ink/40">{PILL_LABEL[r.answer] ?? r.answer}</span>
-                          <span className={cn("text-sm font-bold w-5 text-center", r.is_correct ? "text-poster-teal" : "text-poster-red")}>
-                            {r.is_correct ? "✓" : "✗"}
-                          </span>
-                          {r.points > 0 && <span className="text-xs font-bold text-poster-yellow tabular-nums">+{r.points}</span>}
-                        </>
-                      ) : (
-                        <span className="text-xs text-poster-ink/25 italic">no answer</span>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="text-5xl font-bold text-poster-ink leading-snug tracking-tight drop-shadow-sm flex flex-col items-center gap-1">
+                {sentence.deBefore && <span>{sentence.deBefore}</span>}
+                {showBreakdown ? (
+                  <span key="filled" className="answer-fill text-poster-teal px-4 min-w-[64px] text-center">
+                    {PILL_LABEL[activeQ.correctPillId] ?? activeQ.correctPillId}
+                  </span>
+                ) : (
+                  <span key="blank" className="text-poster-ink/35 italic px-4 min-w-[64px] text-center" style={{ borderBottom: "3px solid black" }}>
+                    {sentence.hint || " "}
+                  </span>
+                )}
+                {sentence.deAfter && <span>{sentence.deAfter.trimStart()}</span>}
               </div>
-              {sessionLeaderboard.length > 0 && (
-                <div className="px-4 pb-3 space-y-1">
-                  <div className="text-[10px] font-semibold text-poster-ink/40 uppercase tracking-widest mb-1">Rankings</div>
-                  {sessionLeaderboard.slice(0, 5).map((t, i) => (
-                    <div key={t.id} className={cn("flex items-center gap-2 rounded-full px-3 py-1.5", i === 0 ? "bg-poster-yellow" : "bg-white/60")}>
-                      <span className={cn("text-xs font-bold w-4 text-center", i === 0 ? "text-white" : "text-poster-ink/30")}>{i + 1}</span>
-                      <img src={avatarSrc(t.avatar)} alt="" className="w-5 h-5" draggable={false} />
-                      <span className={cn("flex-1 text-sm font-semibold", i === 0 ? "text-white" : "text-poster-ink")}>{t.name}</span>
-                      <span className={cn("text-sm font-bold tabular-nums", i === 0 ? "text-white" : "text-poster-ink")}>{t.points}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="px-4 pb-4 mt-auto pt-2">
-                <button
-                  onClick={() => { nextQuestion(); setShowBreakdown(false); }}
-                  className="w-full py-2.5 rounded-full bg-poster-teal text-white font-bold flex items-center justify-center gap-2 hover:bg-poster-teal/90 transition-colors text-sm"
-                >
-                  <SkipForward size={14} />
-                  {session.current_question_index + 1 >= session.questions.length ? "End → Results" : "Next Question →"}
-                </button>
+              <div className="text-2xl text-poster-ink/60 font-medium drop-shadow-sm italic">
+                {sentence.en}
               </div>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 px-2">
-              {activeQ && sentence && (
-                <>
-                  <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold bg-white/70 backdrop-blur-sm rounded-full px-3 py-1">
-                    Q{session.current_question_index + 1} / {session.questions.length}
-                    {" · "}{answeredThisQ} / {participants.size} answered
-                  </div>
-                  <div className="text-5xl font-bold text-poster-ink leading-snug tracking-tight drop-shadow-sm flex flex-col items-center gap-1">
-                    {sentence.deBefore && <span>{sentence.deBefore}</span>}
-                    <span className="text-poster-ink/35 italic px-4 min-w-[64px] text-center" style={{ borderBottom: "3px solid black" }}>
-                      {sentence.hint || " "}
-                    </span>
-                    {sentence.deAfter && <span>{sentence.deAfter.trimStart()}</span>}
-                  </div>
-                  <div className="text-2xl text-poster-ink/60 font-medium drop-shadow-sm italic">
-                    {sentence.en}
-                  </div>
-                </>
-              )}
-            </div>
+            </>
           )}
         </div>
 
-        {/* Controls */}
+        {/* Controls — shows student stats during breakdown, normal controls otherwise */}
         <div className="pointer-events-auto bg-poster-bg/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden border border-poster-ink/10">
           <button
             onClick={() => setCollapsed((c) => !c)}
@@ -440,6 +383,61 @@ export function TeacherPanel() {
                 >
                   {creating ? "Creating…" : "Start Session"}
                 </button>
+              ) : showBreakdown && session.phase === "active" ? (
+                <>
+                  {/* Per-student answers */}
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] uppercase tracking-widest text-poster-ink/40 font-semibold">Answers</div>
+                    {[...participants.entries()].map(([id, p]) => {
+                      const r = responses.find((r) => r.student_id === id && r.question_index === session.current_question_index);
+                      return (
+                        <div key={id} className="flex items-center gap-2 rounded-full px-3 py-1.5 bg-white/60">
+                          <img src={avatarSrc(p.avatar)} alt="" className="w-6 h-6" draggable={false} />
+                          <span className="flex-1 text-sm font-semibold text-poster-ink truncate">{p.name}</span>
+                          {r ? (
+                            <>
+                              <span className="text-xs font-bold text-poster-ink/40">{PILL_LABEL[r.answer] ?? r.answer}</span>
+                              <span className={cn("text-sm font-bold w-5 text-center", r.is_correct ? "text-poster-teal" : "text-poster-red")}>
+                                {r.is_correct ? "✓" : "✗"}
+                              </span>
+                              {r.points > 0 && <span className="text-xs font-bold text-poster-yellow tabular-nums">+{r.points}</span>}
+                            </>
+                          ) : (
+                            <span className="text-xs text-poster-ink/25 italic">no answer</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Rankings */}
+                  {sessionLeaderboard.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="text-[10px] uppercase tracking-widest text-poster-ink/40 font-semibold">Rankings</div>
+                      {sessionLeaderboard.slice(0, 5).map((t, i) => (
+                        <div key={t.id} className={cn("flex items-center gap-2 rounded-full px-3 py-1.5", i === 0 ? "bg-poster-yellow" : "bg-white/60")}>
+                          <span className={cn("text-xs font-bold w-4 text-center", i === 0 ? "text-white" : "text-poster-ink/30")}>{i + 1}</span>
+                          <img src={avatarSrc(t.avatar)} alt="" className="w-5 h-5" draggable={false} />
+                          <span className={cn("flex-1 text-sm font-semibold", i === 0 ? "text-white" : "text-poster-ink")}>{t.name}</span>
+                          <span className={cn("text-sm font-bold tabular-nums", i === 0 ? "text-white" : "text-poster-ink")}>{t.points}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Next */}
+                  <button
+                    onClick={() => { nextQuestion(); setShowBreakdown(false); }}
+                    className="w-full py-3 rounded-full bg-poster-teal text-white font-bold flex items-center justify-center gap-2 hover:bg-poster-teal/90 transition-colors"
+                  >
+                    <SkipForward size={16} />
+                    {session.current_question_index + 1 >= session.questions.length ? "End → Results" : "Next Question →"}
+                  </button>
+                  <button
+                    onClick={resetSession}
+                    className="w-full py-2 text-xs text-poster-ink/30 hover:text-poster-ink/60 flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <RotateCcw size={13} /> End / Reset
+                  </button>
+                </>
               ) : (
                 <>
                   <div>
