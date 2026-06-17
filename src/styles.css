@@ -372,6 +372,20 @@ body {
   pointer-events: none !important;
 }
 
+/* Grey out prep group containers when their pills are eliminated */
+[data-group="g-akk-prep"],
+[data-group="g-dat-prep"],
+[data-group="g-twL"],
+[data-group="g-twR"] {
+  transition: background-color 0.7s ease;
+}
+[data-group="g-akk-prep"]:has([data-quiz-elim="1"]),
+[data-group="g-dat-prep"]:has([data-quiz-elim="1"]),
+[data-group="g-twL"]:has([data-quiz-elim="1"]),
+[data-group="g-twR"]:has([data-quiz-elim="1"]) {
+  background-color: #bebebe !important;
+}
+
 /* Correct pill pulse during breakdown — applied via data-quiz-correct attribute */
 @keyframes quiz-correct-pulse {
   0%   { box-shadow: 0 0 0 3px hsl(var(--poster-teal) / 0.9); }
