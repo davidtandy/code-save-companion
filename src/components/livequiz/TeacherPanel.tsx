@@ -341,10 +341,10 @@ export function TeacherPanel() {
         const el = document.querySelector(`[data-cell-id="${pillId}"]`);
         if (!el) { gi += keys.length; continue; }
         const rect = el.getBoundingClientRect();
-        const spacing = 22;
+        const spacing = 14;
         const totalW = (keys.length - 1) * spacing;
-        const cx = rect.left + rect.width / 2 - totalW / 2 - 12;
-        const cy = rect.top + rect.height / 2 - 12;
+        const cx = rect.left + rect.width / 2 - totalW / 2 - 6;
+        const cy = rect.bottom - 6;
         keys.forEach((avatarKey, i) => {
           avatars.push({ key: `${pillId}-${i}`, x: cx + i * spacing, y: cy, avatarKey, delayMs: gi * 55 });
           gi++;
@@ -574,7 +574,7 @@ export function TeacherPanel() {
           className="fixed z-[300] pointer-events-none avatar-scatter"
           style={{ left: x, top: y, animationDelay: `${delayMs}ms` }}
         >
-          <img src={avatarSrc(avatarKey)} alt="" className="w-6 h-6 rounded-full shadow-lg ring-2 ring-white" draggable={false} />
+          <img src={avatarSrc(avatarKey)} alt="" className="w-3 h-3 rounded-full shadow ring-1 ring-white" draggable={false} />
         </div>
       ))}
     </>
