@@ -260,7 +260,11 @@ export function TeacherPreviewPanel() {
         {/* Controls */}
         <div
           className="pointer-events-auto bg-poster-bg/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden border border-poster-ink/10 flex flex-col"
-          style={{ flexGrow: panelExpanded ? 1 : 0, transition: "flex-grow 0.5s ease-in-out" }}
+          style={
+            showBreakdown && !panelExpanded
+              ? { maxHeight: 0, overflow: "hidden" }
+              : { flexGrow: panelExpanded ? 1 : 0, transition: "flex-grow 0.5s ease-in-out" }
+          }
         >
           {/* Header */}
           <button
