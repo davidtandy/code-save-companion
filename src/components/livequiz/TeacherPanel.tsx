@@ -263,9 +263,9 @@ export function TeacherPanel() {
 
   return (
     <>
-      {/* ── QR — fixed top-right ── */}
-      <div className="fixed top-[52px] right-4 z-50 flex flex-col items-center gap-1.5">
-        <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold text-center">
+      {/* ── QR — fixed bottom-left, doubles on hover ── */}
+      <div className="fixed bottom-4 left-4 z-50 flex flex-col items-start gap-1.5 transition-transform duration-200 origin-bottom-left hover:scale-[2]">
+        <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold">
           Scan to join!
         </div>
         <div className="bg-white rounded-xl p-2 shadow-lg border border-poster-ink/10">
