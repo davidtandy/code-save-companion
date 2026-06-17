@@ -92,22 +92,30 @@ export function eliminationOrderFull(q: QuizQuestion): string[] {
   return eliminationTiersData(q).order;
 }
 
-/** Absolute-time group thresholds for elimination phases. */
-export const ELIM_T1_MS =  2000; // first half of wrong-type greys
-export const ELIM_T2_MS =  4000; // second half of wrong-type greys
-export const ELIM_T3_MS =  6000; // first half of wrong-case greys
-export const ELIM_T4_MS =  8000; // second half of wrong-case greys
-export const ELIM_T5_MS = 10000; // individual same-case pills start
+/** Absolute-time thresholds for each elimination wave. */
+export const ELIM_T1_MS =  2000; // nom verb endings fade
+export const ELIM_T2_MS =  5000; // possessives fade
+export const ELIM_T3_MS =  8000; // first half wrong-type + nom articles
+export const ELIM_T4_MS = 12000; // second half wrong-type + nom articles
+export const ELIM_T5_MS = 15000; // first half wrong-case
+export const ELIM_T6_MS = 18000; // second half wrong-case
+export const ELIM_T7_MS = 20000; // same-case individuals start
 
 /**
- * Returns the elimination order split into three tiers plus tier sizes.
- * Tier 0: wrong type. Tier 1: same type, wrong case. Tier 2: same type, same case.
+ * Returns the elimination order in 5 tiers:
+ *   0: nom verb endings (first — always irrelevant for article questions)
+ *   1: possessives (second)
+ *   2: wrong row-type pronouns + nom articles for non-nom questions
+ *   3: same type, wrong case
+ *   4: same type, same case (direct competitors, last)
  */
 export function eliminationTiersData(q: QuizQuestion): {
   order: string[];
   tier0Count: number;
   tier1Count: number;
   tier2Count: number;
+  tier3Count: number;
+  tier4Count: number;
 } {
   const correct = q.correctPillId;
   const correctCase = correct.split("-")[0] as CaseKey;
@@ -115,46 +123,45 @@ export function eliminationTiersData(q: QuizQuestion): {
 
   const wrong = ALL_PILLS.filter((p) => p !== correct);
 
-  function isEarlyElim(pill: string): boolean {
+  function pillTier(pill: string): number {
     const pillCase = pill.split("-")[0] as CaseKey;
     const pillIsPronoun = PRONOUN_ID_SET.has(pill);
-    // Possessives: always fade first
-    if (pill.startsWith("pos-")) return true;
-    // Wrong row type (article vs pronoun)
-    if (pillIsPronoun !== correctIsPronoun) return true;
-    // Nom pills when the answer is akk/dat — never relevant
-    if (pillCase === "nom" && correctCase !== "nom") return true;
-    return false;
+    if (pill.startsWith("nom-end-")) return 0;
+    if (pill.startsWith("pos-")) return 1;
+    if (pillIsPronoun !== correctIsPronoun) return 2;
+    if (pillCase === "nom" && correctCase !== "nom") return 2;
+    if (pillCase !== correctCase) return 3;
+    return 4;
   }
 
-  let tier0Count = 0, tier1Count = 0;
+  let tier0Count = 0, tier1Count = 0, tier2Count = 0, tier3Count = 0;
   for (const pill of wrong) {
-    const pillCase = pill.split("-")[0] as CaseKey;
-    if (isEarlyElim(pill)) tier0Count++;
-    else if (pillCase !== correctCase) tier1Count++;
+    const t = pillTier(pill);
+    if (t === 0) tier0Count++;
+    else if (t === 1) tier1Count++;
+    else if (t === 2) tier2Count++;
+    else if (t === 3) tier3Count++;
   }
-  const tier2Count = wrong.length - tier0Count - tier1Count;
+  const tier4Count = wrong.length - tier0Count - tier1Count - tier2Count - tier3Count;
 
-  const order = [...wrong].sort((a, b) => confusability(a) - confusability(b));
+  const order = [...wrong].sort((a, b) => {
+    const ta = pillTier(a), tb = pillTier(b);
+    if (ta !== tb) return ta - tb;
+    return similarity(a, correct) - similarity(b, correct);
+  });
 
-  function confusability(pill: string): number {
-    const pillCase = pill.split("-")[0] as CaseKey;
-    const sim = similarity(pill, correct);
-    if (isEarlyElim(pill)) return 0 + sim;
-    if (pillCase !== correctCase) return 100 + sim;
-    return 200 + sim;
-  }
-
-  return { order, tier0Count, tier1Count, tier2Count };
+  return { order, tier0Count, tier1Count, tier2Count, tier3Count, tier4Count };
 }
 
 /**
  * Given elapsed time, returns how many pills should currently be greyed.
- * t=2s: first half of wrong-type greys as a group
- * t=4s: second half of wrong-type greys as a group
- * t=6s: first half of wrong-case greys as a group
- * t=8s: second half of wrong-case greys as a group
- * t=10s+: same-case competitors grey one at a time, evenly spaced to timer end
+ * t=2s:  nom endings (all at once)
+ * t=5s:  possessives (all at once)
+ * t=8s:  first half wrong-type + nom articles
+ * t=12s: second half wrong-type + nom articles
+ * t=15s: first half wrong-case
+ * t=18s: second half wrong-case
+ * t=20s+: same-case, one at a time to timer end
  */
 export function computeElimCount(
   elapsedMs: number,
@@ -162,17 +169,24 @@ export function computeElimCount(
   tier0Count: number,
   tier1Count: number,
   tier2Count: number,
+  tier3Count: number,
+  tier4Count: number,
 ): number {
-  const t0half = Math.floor(tier0Count / 2);
-  const t1half = Math.floor(tier1Count / 2);
+  const t01  = tier0Count + tier1Count;
+  const t012 = t01  + tier2Count;
+  const t0123 = t012 + tier3Count;
+  const t2half = Math.floor(tier2Count / 2);
+  const t3half = Math.floor(tier3Count / 2);
   if (elapsedMs < ELIM_T1_MS) return 0;
-  if (elapsedMs < ELIM_T2_MS) return t0half;
-  if (elapsedMs < ELIM_T3_MS) return tier0Count;
-  if (elapsedMs < ELIM_T4_MS) return tier0Count + t1half;
-  if (elapsedMs < ELIM_T5_MS) return tier0Count + tier1Count;
-  const availableMs = Math.max(1, timerMaxMs - ELIM_T5_MS);
-  const progress = Math.min(1, (elapsedMs - ELIM_T5_MS) / availableMs);
-  return tier0Count + tier1Count + Math.floor(progress * tier2Count);
+  if (elapsedMs < ELIM_T2_MS) return tier0Count;
+  if (elapsedMs < ELIM_T3_MS) return t01;
+  if (elapsedMs < ELIM_T4_MS) return t01 + t2half;
+  if (elapsedMs < ELIM_T5_MS) return t012;
+  if (elapsedMs < ELIM_T6_MS) return t012 + t3half;
+  if (elapsedMs < ELIM_T7_MS) return t0123;
+  const availableMs = Math.max(1, timerMaxMs - ELIM_T7_MS);
+  const progress = Math.min(1, (elapsedMs - ELIM_T7_MS) / availableMs);
+  return t0123 + Math.floor(progress * tier4Count);
 }
 
 function similarity(a: string, b: string): number {
