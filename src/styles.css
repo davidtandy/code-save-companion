@@ -361,6 +361,18 @@ body {
   pointer-events: none !important;
 }
 
+/* Correct pill pulse during breakdown — applied via data-quiz-correct attribute */
+@keyframes quiz-correct-pulse {
+  0%   { box-shadow: 0 0 0 3px hsl(var(--poster-teal) / 0.9); }
+  60%  { box-shadow: 0 0 0 10px hsl(var(--poster-teal) / 0); }
+  100% { box-shadow: 0 0 0 3px hsl(var(--poster-teal) / 0.9); }
+}
+[data-cell-id][data-quiz-correct="1"] {
+  animation: quiz-correct-pulse 1.2s ease-in-out infinite;
+  position: relative;
+  z-index: 1;
+}
+
 /* Points tally pop — score chip pulses when totalPoints key changes */
 @keyframes pts-pop {
   0%   { transform: scale(1); }
