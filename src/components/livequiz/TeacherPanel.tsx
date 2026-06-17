@@ -130,6 +130,7 @@ export function TeacherPanel() {
   const [responses, setResponses] = useState<any[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const creatingRef = useRef(false); // synchronous guard against double-submit
 
   const createFn     = useServerFn(createLiveSession);
@@ -280,8 +281,6 @@ export function TeacherPanel() {
   const answeredThisQ = session
     ? responses.filter((r) => r.question_index === session.current_question_index).length
     : 0;
-
-  const [showBreakdown, setShowBreakdown] = useState(false);
 
   const sessionLeaderboard = useMemo(() => {
     const totals = new Map<string, { id: string; name: string; avatar: string; points: number }>();
