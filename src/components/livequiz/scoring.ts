@@ -32,12 +32,18 @@ export const PILL_LABEL: Record<string, string> = {
   "akk-einen": "einen", "akk-eine": "eine", "akk-ein": "ein", "akk-none": "—",
   "dat-dem": "dem", "dat-der": "der", "dat-dem2": "dem", "dat-denN": "den",
   "dat-einem": "einem", "dat-einer": "einer", "dat-einem2": "einem", "dat-noneN": "—",
+  // possessives
+  "pos-mein": "mein", "pos-dein": "dein", "pos-sein": "sein/ihr",
+  "pos-unser": "unser", "pos-euer": "euer", "pos-ihr": "ihr/Ihr", "pos-kein": "kein",
 };
+
+const POSSESSIVE_PILLS = ["pos-mein", "pos-dein", "pos-sein", "pos-unser", "pos-euer", "pos-ihr", "pos-kein"];
 
 /** Every pill ID on the cheatsheet, across all cases and row types. */
 export const ALL_PILLS: string[] = [
   ...PRONOUN_PILLS.nom, ...PRONOUN_PILLS.akk, ...PRONOUN_PILLS.dat,
   ...ARTICLE_PILLS.nom, ...ARTICLE_PILLS.akk, ...ARTICLE_PILLS.dat,
+  ...POSSESSIVE_PILLS,
 ];
 
 const PRONOUN_ID_SET = new Set<string>([
@@ -104,11 +110,22 @@ export function eliminationTiersData(q: QuizQuestion): {
 
   const wrong = ALL_PILLS.filter((p) => p !== correct);
 
+  function isEarlyElim(pill: string): boolean {
+    const pillCase = pill.split("-")[0] as CaseKey;
+    const pillIsPronoun = PRONOUN_ID_SET.has(pill);
+    // Possessives: always fade first
+    if (pill.startsWith("pos-")) return true;
+    // Wrong row type (article vs pronoun)
+    if (pillIsPronoun !== correctIsPronoun) return true;
+    // Nom pills when the answer is akk/dat — never relevant
+    if (pillCase === "nom" && correctCase !== "nom") return true;
+    return false;
+  }
+
   let tier0Count = 0, tier1Count = 0;
   for (const pill of wrong) {
     const pillCase = pill.split("-")[0] as CaseKey;
-    const pillIsPronoun = PRONOUN_ID_SET.has(pill);
-    if (pillIsPronoun !== correctIsPronoun) tier0Count++;
+    if (isEarlyElim(pill)) tier0Count++;
     else if (pillCase !== correctCase) tier1Count++;
   }
   const tier2Count = wrong.length - tier0Count - tier1Count;
@@ -117,9 +134,8 @@ export function eliminationTiersData(q: QuizQuestion): {
 
   function confusability(pill: string): number {
     const pillCase = pill.split("-")[0] as CaseKey;
-    const pillIsPronoun = PRONOUN_ID_SET.has(pill);
     const sim = similarity(pill, correct);
-    if (pillIsPronoun !== correctIsPronoun) return 0 + sim;
+    if (isEarlyElim(pill)) return 0 + sim;
     if (pillCase !== correctCase) return 100 + sim;
     return 200 + sim;
   }
