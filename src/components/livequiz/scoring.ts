@@ -93,13 +93,17 @@ export function eliminationOrderFull(q: QuizQuestion): string[] {
 }
 
 /** Absolute-time thresholds for each elimination wave. */
-export const ELIM_T1_MS =  2000; // nom verb endings fade
-export const ELIM_T2_MS =  5000; // possessives fade
-export const ELIM_T3_MS =  8000; // first half wrong-type + nom articles
-export const ELIM_T4_MS = 12000; // second half wrong-type + nom articles
-export const ELIM_T5_MS = 15000; // first half wrong-case
-export const ELIM_T6_MS = 18000; // second half wrong-case
-export const ELIM_T7_MS = 20000; // same-case individuals start
+export const ELIM_T1_MS  =  2000; // nom verb endings (all)
+export const ELIM_T2_MS  =  5000; // possessives (all)
+export const ELIM_T3a_MS =  8000; // wrong-type 1/4
+export const ELIM_T3b_MS = 11000; // wrong-type 2/4
+export const ELIM_T3c_MS = 14000; // wrong-type 3/4
+export const ELIM_T3d_MS = 17000; // wrong-type 4/4
+export const ELIM_T4a_MS = 18000; // wrong-case 1/4
+export const ELIM_T4b_MS = 20000; // wrong-case 2/4
+export const ELIM_T4c_MS = 22000; // wrong-case 3/4
+export const ELIM_T4d_MS = 24000; // wrong-case 4/4
+export const ELIM_T5_MS  = 25000; // same-case individuals start
 
 /**
  * Returns the elimination order in 5 tiers:
@@ -155,13 +159,17 @@ export function eliminationTiersData(q: QuizQuestion): {
 
 /**
  * Given elapsed time, returns how many pills should currently be greyed.
- * t=2s:  nom endings (all at once)
- * t=5s:  possessives (all at once)
- * t=8s:  first half wrong-type + nom articles
- * t=12s: second half wrong-type + nom articles
- * t=15s: first half wrong-case
- * t=18s: second half wrong-case
- * t=20s+: same-case, one at a time to timer end
+ * t=2s:   nom endings (all)
+ * t=5s:   possessives (all)
+ * t=8s:   wrong-type 1/4
+ * t=11s:  wrong-type 2/4
+ * t=14s:  wrong-type 3/4
+ * t=17s:  wrong-type 4/4
+ * t=18s:  wrong-case 1/4
+ * t=20s:  wrong-case 2/4
+ * t=22s:  wrong-case 3/4
+ * t=24s:  wrong-case 4/4
+ * t=25s+: same-case, one at a time to timer end
  */
 export function computeElimCount(
   elapsedMs: number,
@@ -172,20 +180,28 @@ export function computeElimCount(
   tier3Count: number,
   tier4Count: number,
 ): number {
-  const t01  = tier0Count + tier1Count;
-  const t012 = t01  + tier2Count;
+  const t01   = tier0Count + tier1Count;
+  const t012  = t01 + tier2Count;
   const t0123 = t012 + tier3Count;
-  const t2half = Math.floor(tier2Count / 2);
-  const t3half = Math.floor(tier3Count / 2);
-  if (elapsedMs < ELIM_T1_MS) return 0;
-  if (elapsedMs < ELIM_T2_MS) return tier0Count;
-  if (elapsedMs < ELIM_T3_MS) return t01;
-  if (elapsedMs < ELIM_T4_MS) return t01 + t2half;
-  if (elapsedMs < ELIM_T5_MS) return t012;
-  if (elapsedMs < ELIM_T6_MS) return t012 + t3half;
-  if (elapsedMs < ELIM_T7_MS) return t0123;
-  const availableMs = Math.max(1, timerMaxMs - ELIM_T7_MS);
-  const progress = Math.min(1, (elapsedMs - ELIM_T7_MS) / availableMs);
+  const t2q1  = Math.floor(tier2Count * 1 / 4);
+  const t2q2  = Math.floor(tier2Count * 2 / 4);
+  const t2q3  = Math.floor(tier2Count * 3 / 4);
+  const t3q1  = Math.floor(tier3Count * 1 / 4);
+  const t3q2  = Math.floor(tier3Count * 2 / 4);
+  const t3q3  = Math.floor(tier3Count * 3 / 4);
+  if (elapsedMs < ELIM_T1_MS)  return 0;
+  if (elapsedMs < ELIM_T2_MS)  return tier0Count;
+  if (elapsedMs < ELIM_T3a_MS) return t01;
+  if (elapsedMs < ELIM_T3b_MS) return t01 + t2q1;
+  if (elapsedMs < ELIM_T3c_MS) return t01 + t2q2;
+  if (elapsedMs < ELIM_T3d_MS) return t01 + t2q3;
+  if (elapsedMs < ELIM_T4a_MS) return t012;
+  if (elapsedMs < ELIM_T4b_MS) return t012 + t3q1;
+  if (elapsedMs < ELIM_T4c_MS) return t012 + t3q2;
+  if (elapsedMs < ELIM_T4d_MS) return t012 + t3q3;
+  if (elapsedMs < ELIM_T5_MS)  return t0123;
+  const availableMs = Math.max(1, timerMaxMs - ELIM_T5_MS);
+  const progress = Math.min(1, (elapsedMs - ELIM_T5_MS) / availableMs);
   return t0123 + Math.floor(progress * tier4Count);
 }
 
