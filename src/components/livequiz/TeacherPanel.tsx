@@ -472,8 +472,13 @@ export function TeacherPanel() {
                       {sessionLeaderboard.slice(0, 5).map((t, i) => {
                         const prevRank = prevRankOrder.indexOf(t.id);
                         const change = prevRank === -1 ? 0 : prevRank - i;
+                        const slideFromPx = prevRank === -1 ? 0 : (prevRank - i) * 34;
                         return (
-                          <div key={t.id} className={cn("flex items-center gap-2 rounded-full px-3 py-1.5", i === 0 ? "bg-poster-yellow" : "bg-white/60")}>
+                          <div
+                            key={t.id}
+                            className={cn("flex items-center gap-2 rounded-full px-3 py-1.5", i === 0 ? "bg-poster-yellow" : "bg-white/60")}
+                            style={statsExpanded && slideFromPx !== 0 ? { '--rank-slide-from': `${slideFromPx}px`, animation: 'rank-slide 0.55s ease-out both' } as React.CSSProperties : undefined}
+                          >
                             <span className={cn("text-xs font-bold w-4 text-center", i === 0 ? "text-white" : "text-poster-ink/30")}>{i + 1}</span>
                             <img src={avatarSrc(t.avatar)} alt="" className="w-5 h-5" draggable={false} />
                             <span className={cn("flex-1 text-sm font-semibold", i === 0 ? "text-white" : "text-poster-ink")}>{t.name}</span>
