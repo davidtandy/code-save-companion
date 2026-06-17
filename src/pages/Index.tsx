@@ -345,6 +345,8 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
   };
 
   const handleTapWord = (id: string, _e?: React.MouseEvent) => {
+    // In live quiz student mode, pill taps are for answering only — no popups.
+    if (liveStudent) return;
     const root = id.includes("::") ? id.split("::")[0] : id;
     const isEin = einIds.has(root);
     const isPoss = root.startsWith("pos-");
