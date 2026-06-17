@@ -36,14 +36,16 @@ import seinCloud from "@/assets/poster/chef-hat.svg";
 import envelope from "@/assets/poster/envelope.svg";
 import { StudentLobby, type StudentIdentity } from "@/components/livequiz/StudentLobby";
 import { TeacherPanel } from "@/components/livequiz/TeacherPanel";
+import { TeacherPreviewPanel } from "@/components/livequiz/TeacherPreviewPanel";
 import { LiveStudentOverlay } from "@/components/livequiz/LiveStudentOverlay";
 import { LiveQuizProvider } from "@/components/livequiz/LiveQuizProvider";
 import { RotatePrompt } from "@/components/RotatePrompt";
 
-function getLiveMode(): "student" | "teacher" | null {
+function getLiveMode(): "student" | "teacher" | "preview" | null {
   if (typeof window === "undefined") return null;
   const p = new URLSearchParams(window.location.search);
   if (p.has("livequizteacher")) return "teacher";
+  if (p.has("livequizteacherpreview")) return "preview";
   if (p.has("livequiz")) return "student";
   return null;
 }
@@ -114,6 +116,7 @@ const Index = () => {
 
   return <Cheatsheet
     liveTeacher={liveMode === "teacher"}
+    liveTeacherPreview={liveMode === "preview"}
     liveStudent={liveMode === "student" ? studentIdentity : null}
     onLiveLeave={liveMode === "student" ? () => {
       try { localStorage.removeItem("livequiz_student"); } catch {}
@@ -123,8 +126,9 @@ const Index = () => {
 
 };
 
-const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
+const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave }: {
   liveTeacher: boolean;
+  liveTeacherPreview?: boolean;
   liveStudent?: StudentIdentity | null;
   onLiveLeave?: () => void;
 }) => {
@@ -903,6 +907,7 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
   const mainContent = (
     <>
     {liveTeacher && <TeacherPanel />}
+    {liveTeacherPreview && <TeacherPreviewPanel />}
     {liveStudent && (
       <LiveStudentOverlay
         identity={liveStudent}
