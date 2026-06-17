@@ -315,6 +315,7 @@ export function TeacherPanel() {
     setPrevRankOrder(sessionLeaderboard.map((t) => t.id));
     setShowBreakdown(false);
     setStatsExpanded(false);
+    setPillAvatars([]);
   }, [session?.current_question_index]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Expand stats panel 2.5s after breakdown

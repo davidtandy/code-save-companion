@@ -106,6 +106,7 @@ export function TeacherPreviewPanel() {
   useEffect(() => {
     setShowBreakdown(false);
     setStatsExpanded(false);
+    setPillAvatars([]);
   }, [currentIdx]);
 
   // Expand stats panel 2.5s after breakdown
@@ -119,8 +120,9 @@ export function TeacherPreviewPanel() {
   useEffect(() => {
     if (!showBreakdown) { setPillAvatars([]); return; }
     const t = setTimeout(() => {
+      const cur = responses.filter((r) => r.question_index === currentIdx);
       const byPill = new Map<string, string[]>();
-      for (const r of responses) {
+      for (const r of cur) {
         if (!byPill.has(r.answer)) byPill.set(r.answer, []);
         byPill.get(r.answer)!.push(r.student_avatar);
       }
