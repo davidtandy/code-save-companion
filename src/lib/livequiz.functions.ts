@@ -273,3 +273,34 @@ export const getStudentState = createServerFn({ method: "POST" })
       joinedCount: joinedRes.count ?? 0,
     };
   });
+
+// ---------- Teacher: reset session in-place (students stay connected) ----------
+export const resetLiveSession = createServerFn({ method: "POST" })
+  .inputValidator((d: { sessionId: string; hostToken: string; questions: unknown[] }) => d)
+  .handler(async ({ data }) => {
+    const sb = await admin();
+    // Verify host token
+    const { data: sess, error: e1 } = await sb
+      .from("quiz_session")
+      .select("host_token")
+      .eq("id", data.sessionId)
+      .maybeSingle();
+    if (e1) throw new Error(e1.message);
+    if (!sess || sess.host_token !== data.hostToken) throw new Error("Unauthorized");
+    // Clear all responses for this session
+    await sb.from("quiz_responses").delete().eq("session_id", data.sessionId);
+    // Reset session to lobby with fresh questions
+    const { data: row, error: e2 } = await sb
+      .from("quiz_session")
+      .update({
+        phase: "lobby",
+        current_question_index: 0,
+        question_started_at: null,
+        questions: data.questions as any,
+      })
+      .eq("id", data.sessionId)
+      .select("id, code, host_token, phase, current_question_index, question_started_at, timer_max_seconds, questions, game_mode")
+      .single();
+    if (e2) throw new Error(e2.message);
+    return row;
+  });

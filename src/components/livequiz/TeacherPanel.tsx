@@ -100,6 +100,7 @@ import {
   getTeacherSession,
   updateLiveSession,
   listResponses,
+  resetLiveSession,
 } from "@/lib/livequiz.functions";
 
 function makeCode(): string {
@@ -135,6 +136,7 @@ export function TeacherPanel() {
   const getTeacherFn = useServerFn(getTeacherSession);
   const updateFn     = useServerFn(updateLiveSession);
   const listFn       = useServerFn(listResponses);
+  const resetFn      = useServerFn(resetLiveSession);
 
   useEffect(() => {
     try {
@@ -176,7 +178,7 @@ export function TeacherPanel() {
     setCreating(true);
     try {
       const row = await createFn({
-        data: { code: makeCode(), gameMode: "prep-lock", questions: sampleQuestions(10), timerMaxSeconds: 30 },
+        data: { code: makeCode(), gameMode: "prep-lock", questions: sampleQuestions(20), timerMaxSeconds: 30 },
       });
       setSession(row as Session);
       try {
@@ -212,11 +214,16 @@ export function TeacherPanel() {
 
   async function resetSession() {
     if (!session) return;
-    if (!confirm("End this session and start a new one?")) return;
-    try { localStorage.removeItem(STORAGE_KEY); } catch {}
-    await updateFn({ data: { sessionId: session.id, hostToken: session.host_token, patch: { phase: "ended" } } }).catch(() => {});
-    setSession(null);
-    setResponses([]);
+    if (!confirm("Reset session? Students stay connected and will see the lobby again.")) return;
+    try {
+      const row = await resetFn({
+        data: { sessionId: session.id, hostToken: session.host_token, questions: sampleQuestions(20) },
+      });
+      setSession(row as Session);
+      setResponses([]);
+    } catch (e: any) {
+      alert(e?.message ?? "Reset failed");
+    }
   }
 
   const joinUrl = `${window.location.origin}/?livequiz`;
