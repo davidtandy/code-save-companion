@@ -23,17 +23,18 @@ function buildPreviewSentence(q: any): { deBefore: string; hint: string; deAfter
   return { deBefore: `… ${q.prep?.token ?? ""} `, hint: "?", deAfter: ` ${q.nounDe ?? "…"}.`, en: "" };
 }
 
-function makeFakeResponses(q: any, startedAt: number) {
+function makeFakeResponses(q: any, startedAt: number, questionIndex: number) {
   return FAKE_STUDENTS.map((s, i) => {
-    const isCorrect = i !== 1; // Luca always wrong for variety
-    const elapsed = 4000 + i * 2500;
+    // Rotate who gets it wrong each round so rankings shift
+    const isCorrect = i !== (questionIndex % FAKE_STUDENTS.length);
+    const elapsed = 3000 + i * 2000 + (questionIndex % 3) * 500;
     const ratio = Math.max(0, 1 - elapsed / TIMER_MAX_MS);
     const points = isCorrect ? Math.round(500 + 500 * ratio) : 0;
     return {
       student_id: s.id,
       student_name: s.name,
       student_avatar: s.avatar,
-      question_index: 0,
+      question_index: questionIndex,
       answer: isCorrect ? q.correctPillId : "nom-der",
       is_correct: isCorrect,
       response_ms: elapsed,
@@ -103,10 +104,9 @@ export function TeacherPreviewPanel() {
 
   // Reset breakdown when question advances
   useEffect(() => {
-    setPrevRankOrder(sessionLeaderboard.map((t) => t.id));
     setShowBreakdown(false);
     setStatsExpanded(false);
-  }, [currentIdx]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentIdx]);
 
   // Expand stats panel 2.5s after breakdown
   useEffect(() => {
@@ -144,32 +144,29 @@ export function TeacherPreviewPanel() {
     return () => clearTimeout(t);
   }, [showBreakdown, currentIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Generate fake responses when breakdown shows
-  useEffect(() => {
-    if (!showBreakdown || !activeQ) return;
-    setResponses(makeFakeResponses(activeQ, questionStartedAt));
-  }, [showBreakdown]);
-
   function startQuiz() {
     const qs = sampleQuestions(20);
+    const now = Date.now();
     setQuestions(qs);
     setCurrentIdx(0);
-    setQuestionStartedAt(Date.now());
-    setNow(Date.now());
-    setResponses([]);
+    setQuestionStartedAt(now);
+    setNow(now);
+    setResponses(makeFakeResponses(qs[0], now, 0));
     setShowBreakdown(false);
     setPhase("active");
   }
 
   function nextQuestion() {
     const next = currentIdx + 1;
-    setResponses([]);
+    setPrevRankOrder(sessionLeaderboard.map((t) => t.id));
     if (next >= questions.length) {
       setPhase("results");
     } else {
+      const now = Date.now();
       setCurrentIdx(next);
-      setQuestionStartedAt(Date.now());
-      setNow(Date.now());
+      setQuestionStartedAt(now);
+      setNow(now);
+      setResponses((prev) => [...prev, ...makeFakeResponses(questions[next], now, next)]);
     }
   }
 
@@ -191,7 +188,7 @@ export function TeacherPreviewPanel() {
     return [...totals.values()].sort((a, b) => b.points - a.points);
   }, [responses]);
 
-  const answeredThisQ = responses.filter((r) => r.question_index === 0).length;
+  const answeredThisQ = responses.filter((r) => r.question_index === currentIdx).length;
   const sentence = activeQ ? buildPreviewSentence(activeQ) : null;
   const joinUrl = typeof window !== "undefined" ? `${window.location.origin}/?livequiz` : "";
 
@@ -281,7 +278,7 @@ export function TeacherPreviewPanel() {
                   <div className="space-y-1.5">
                     <div className="text-[10px] uppercase tracking-widest text-poster-ink/40 font-semibold">Answers</div>
                     {FAKE_STUDENTS.map((s) => {
-                      const r = responses.find((r) => r.student_id === s.id);
+                      const r = responses.find((r) => r.student_id === s.id && r.question_index === currentIdx);
                       return (
                         <div key={s.id} className="flex items-center gap-2 rounded-full px-3 py-1.5 bg-white/60">
                           <img src={avatarSrc(s.avatar)} alt="" className="w-6 h-6" draggable={false} />
