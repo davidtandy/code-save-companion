@@ -32,18 +32,23 @@ export const PILL_LABEL: Record<string, string> = {
   "akk-einen": "einen", "akk-eine": "eine", "akk-ein": "ein", "akk-none": "—",
   "dat-dem": "dem", "dat-der": "der", "dat-dem2": "dem", "dat-denN": "den",
   "dat-einem": "einem", "dat-einer": "einer", "dat-einem2": "einem", "dat-noneN": "—",
+  // nom verb endings
+  "nom-end-e": "-e", "nom-end-st": "-st", "nom-end-t": "-t", "nom-end-en": "-en",
+  "nom-end-t2": "-t", "nom-end-en2": "-en",
   // possessives
   "pos-mein": "mein", "pos-dein": "dein", "pos-sein": "sein/ihr",
   "pos-unser": "unser", "pos-euer": "euer", "pos-ihr": "ihr/Ihr", "pos-kein": "kein",
 };
 
 const POSSESSIVE_PILLS = ["pos-mein", "pos-dein", "pos-sein", "pos-unser", "pos-euer", "pos-ihr", "pos-kein"];
+const NOM_ENDING_PILLS = ["nom-end-e", "nom-end-st", "nom-end-t", "nom-end-en", "nom-end-t2", "nom-end-en2"];
 
 /** Every pill ID on the cheatsheet, across all cases and row types. */
 export const ALL_PILLS: string[] = [
   ...PRONOUN_PILLS.nom, ...PRONOUN_PILLS.akk, ...PRONOUN_PILLS.dat,
   ...ARTICLE_PILLS.nom, ...ARTICLE_PILLS.akk, ...ARTICLE_PILLS.dat,
   ...POSSESSIVE_PILLS,
+  ...NOM_ENDING_PILLS,
 ];
 
 const PRONOUN_ID_SET = new Set<string>([
