@@ -1,0 +1,13 @@
+{
+  "name": "GenauGenau — German Grammar",
+  "short_name": "GenauGenau",
+  "description": "Interactive German cases, pronouns and articles cheatsheet",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#FFFDF4",
+  "theme_color": "#FFFDF4",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" }
+  ]
+}

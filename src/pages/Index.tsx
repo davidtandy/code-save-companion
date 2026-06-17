@@ -713,11 +713,11 @@ const Cheatsheet = ({ liveTeacher, liveStudent, onLiveLeave }: {
     const fit = () => {
       const stage = stageRef.current?.getBoundingClientRect();
       if (!stage) return;
-      const margin = quizFillMode ? 0 : 16;
-      // In quizFill, subtract icons (120px) + padding that can safely overflow (50px extra)
-      // so scale is larger; the poster padding clips off-screen while all pill rows stay visible
-      const posterH = quizFillMode ? POSTER_H - 170 : POSTER_H;
-      const s = Math.min(1, (stage.width - margin * 2) / POSTER_W, (stage.height - margin * 2) / posterH);
+      const margin = quizFillMode ? 8 : 16;
+      // In quizFill: scale to the pill content area — icons (120px) + top/bottom padding (2×32=64px)
+      // removed from denominator so the poster padding clips just off-screen on any phone size
+      const fitH = quizFillMode ? POSTER_H - 184 : POSTER_H;
+      const s = Math.min(1, (stage.width - margin * 2) / POSTER_W, (stage.height - margin * 2) / fitH);
       setFitScale(s);
     };
     fit();
