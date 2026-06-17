@@ -113,7 +113,7 @@ export const QuizExplainerCard = ({ question, correctCount, result, onNext, onEx
         ];
   } else {
     const g: Gender = question.gender ?? "n";
-    answer = question.nounArticle;
+    answer = question.nounArticle ?? "";
     const articlePill = <Pill key="art" className={answerCls}>{answer}</Pill>;
     const nounPill = (
       <Pill key="noun" className={cn(GENDER_BORDER[g], GENDER_TEXT[g])}>

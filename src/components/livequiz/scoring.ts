@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { QUIZ_BANK, type QuizQuestion } from "@/components/poster/quiz/quizData";
+import { LIVE_QUIZ_BANK, type QuizQuestion } from "@/components/poster/quiz/quizData";
 import type { CaseKey } from "@/components/poster/wordData";
 
 /** Pill option choices per case for each question kind. */
@@ -171,14 +171,14 @@ export function scoreFor(correct: boolean, elapsedMs: number, timerMaxMs: number
   return 500 + Math.round(500 * ratio);
 }
 
-/** Sample N questions deterministically from QUIZ_BANK. */
+/** Sample N questions from LIVE_QUIZ_BANK. */
 export function sampleQuestions(count: number): QuizQuestion[] {
   const seed = Date.now() & 0xffff;
   const idx = new Set<number>();
   let s = seed;
-  while (idx.size < Math.min(count, QUIZ_BANK.length)) {
+  while (idx.size < Math.min(count, LIVE_QUIZ_BANK.length)) {
     s = (s * 9301 + 49297) % 233280;
-    idx.add(Math.floor((s / 233280) * QUIZ_BANK.length));
+    idx.add(Math.floor((s / 233280) * LIVE_QUIZ_BANK.length));
   }
-  return [...idx].map((i) => QUIZ_BANK[i]);
+  return [...idx].map((i) => LIVE_QUIZ_BANK[i]);
 }

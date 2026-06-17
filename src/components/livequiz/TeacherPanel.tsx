@@ -259,7 +259,14 @@ export function TeacherPanel() {
     ? responses.filter((r) => r.question_index === session.current_question_index).length
     : 0;
 
-  const sentence = activeQ ? buildSentence(activeQ) : null;
+  const sentence = activeQ
+    ? activeQ.sentence
+      ? (() => {
+          const [deBefore, deAfter] = activeQ.sentence.split("_____");
+          return { deBefore: deBefore ?? "", hint: articleEn(activeQ.nounArticle ?? "") || (activeQ as any).targetEn || "?", deAfter: deAfter ?? "", en: activeQ.sentenceEn ?? "" };
+        })()
+      : buildSentence(activeQ)
+    : null;
 
   return (
     <>
@@ -286,7 +293,7 @@ export function TeacherPanel() {
               </div>
               <div className="text-5xl font-bold text-poster-ink leading-snug tracking-tight drop-shadow-sm flex flex-col items-center gap-1">
                 {sentence.deBefore && <span>{sentence.deBefore}</span>}
-                <span className="text-poster-ink/35 italic border-b-[3px] border-poster-ink/30 px-4 min-w-[64px] text-center">
+                <span className="text-poster-ink/35 italic border-b-[3px] border-poster-ink px-4 min-w-[64px] text-center">
                   {sentence.hint || " "}
                 </span>
                 {sentence.deAfter && <span>{sentence.deAfter.trimStart()}</span>}

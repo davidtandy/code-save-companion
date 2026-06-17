@@ -11,7 +11,8 @@ export type QuizQuestion =
       prep: { token: string; case: CaseKey };
       targetEn: string;
       correctPillId: string;
-      /** Optional surrounding words (used for nominativ mini-sentences). */
+      sentence?: string;
+      sentenceEn?: string;
       prefix?: string;
       suffix?: string;
       prefixEn?: string;
@@ -20,11 +21,13 @@ export type QuizQuestion =
   | {
       kind: "article";
       prep: { token: string; case: CaseKey };
-      nounDe: string;
-      nounEn: string;
-      nounArticle: string; // "der" / "ein" / etc., shown in prompt
-      gender: Gender;
+      nounDe?: string;
+      nounEn?: string;
+      nounArticle?: string;
+      gender?: Gender;
       correctPillId: string;
+      sentence?: string;
+      sentenceEn?: string;
       prefix?: string;
       suffix?: string;
       prefixEn?: string;
@@ -363,6 +366,35 @@ export function generateQuestion(prev?: QuizQuestion | null, opts: GenerateOptio
   }
   return QUIZ_BANK[Math.floor(Math.random() * QUIZ_BANK.length)];
 }
+
+// ---- Live quiz bank: 20 curated real sentences ----
+// Sourced from PrepLockGame + ArticleMutationGame for natural, pedagogically sound examples.
+export const LIVE_QUIZ_BANK: QuizQuestion[] = [
+  // DAT prepositions
+  { kind: "article", prep: dat("mit"),   sentence: "Er spielt mit _____ Hund.",              sentenceEn: "He plays with the dog.",                  nounDe: "Hund",       nounEn: "dog",      nounArticle: "dem",   gender: "m",  correctPillId: "dat-dem"   },
+  { kind: "article", prep: dat("von"),   sentence: "Das ist ein Brief von _____ Lehrerin.",   sentenceEn: "That's a letter from the teacher.",       nounDe: "Lehrerin",   nounEn: "teacher",  nounArticle: "der",   gender: "f",  correctPillId: "dat-der"   },
+  { kind: "article", prep: dat("bei"),   sentence: "Sie wohnt bei _____ Freundin.",           sentenceEn: "She lives with a friend.",                 nounDe: "Freundin",   nounEn: "friend",   nounArticle: "einer", gender: "f",  correctPillId: "dat-einer" },
+  { kind: "article", prep: dat("seit"),  sentence: "Er lernt Deutsch seit _____ Jahr.",       sentenceEn: "He's been learning German for a year.",   nounDe: "Jahr",       nounEn: "year",     nounArticle: "einem", gender: "n",  correctPillId: "dat-einem2"},
+  { kind: "article", prep: dat("aus"),   sentence: "Sie kommt aus _____ Stadt.",              sentenceEn: "She comes from the city.",                 nounDe: "Stadt",      nounEn: "city",     nounArticle: "der",   gender: "f",  correctPillId: "dat-der"   },
+  { kind: "article", prep: dat("zu"),    sentence: "Er geht zu _____ Arzt.",                  sentenceEn: "He goes to the doctor.",                   nounDe: "Arzt",       nounEn: "doctor",   nounArticle: "dem",   gender: "m",  correctPillId: "dat-dem"   },
+  // AKK prepositions
+  { kind: "article", prep: akk("für"),   sentence: "Das ist ein Geschenk für _____ Mutter.",  sentenceEn: "That's a gift for a mother.",              nounDe: "Mutter",     nounEn: "mother",   nounArticle: "eine",  gender: "f",  correctPillId: "akk-eine"  },
+  { kind: "article", prep: akk("durch"), sentence: "Wir fahren durch _____ Wald.",            sentenceEn: "We drive through the forest.",             nounDe: "Wald",       nounEn: "forest",   nounArticle: "den",   gender: "m",  correctPillId: "akk-den"   },
+  { kind: "article", prep: akk("ohne"),  sentence: "Er kommt ohne _____ Schwester.",          sentenceEn: "He comes without a sister.",               nounDe: "Schwester",  nounEn: "sister",   nounArticle: "eine",  gender: "f",  correctPillId: "akk-eine"  },
+  { kind: "article", prep: akk("gegen"), sentence: "Sie spielen gegen _____ Mannschaft.",     sentenceEn: "They play against the team.",              nounDe: "Mannschaft", nounEn: "team",     nounArticle: "die",   gender: "f",  correctPillId: "akk-die"   },
+  { kind: "article", prep: akk("um"),    sentence: "Wir sitzen um _____ Tisch.",              sentenceEn: "We sit around the table.",                 nounDe: "Tisch",      nounEn: "table",    nounArticle: "den",   gender: "m",  correctPillId: "akk-den"   },
+  // Two-way preps: location (dat) vs direction (akk)
+  { kind: "article", prep: dat("in"),    sentence: "Das Buch liegt in _____ Schule.",         sentenceEn: "The book is in the school.",               nounDe: "Schule",     nounEn: "school",   nounArticle: "der",   gender: "f",  correctPillId: "dat-der"   },
+  { kind: "article", prep: akk("in"),    sentence: "Er geht in _____ Schule.",                sentenceEn: "He goes into the school.",                 nounDe: "Schule",     nounEn: "school",   nounArticle: "die",   gender: "f",  correctPillId: "akk-die"   },
+  { kind: "article", prep: dat("auf"),   sentence: "Das Glas steht auf _____ Tisch.",         sentenceEn: "The glass is on the table.",               nounDe: "Tisch",      nounEn: "table",    nounArticle: "dem",   gender: "m",  correctPillId: "dat-dem"   },
+  { kind: "article", prep: akk("auf"),   sentence: "Sie legt das Glas auf _____ Tisch.",      sentenceEn: "She puts the glass onto the table.",       nounDe: "Tisch",      nounEn: "table",    nounArticle: "den",   gender: "m",  correctPillId: "akk-den"   },
+  { kind: "article", prep: dat("an"),    sentence: "Das Bild hängt an _____ Wand.",           sentenceEn: "The picture hangs on the wall.",           nounDe: "Wand",       nounEn: "wall",     nounArticle: "der",   gender: "f",  correctPillId: "dat-der"   },
+  { kind: "article", prep: akk("an"),    sentence: "Er hängt das Bild an _____ Wand.",        sentenceEn: "He hangs the picture on the wall.",        nounDe: "Wand",       nounEn: "wall",     nounArticle: "die",   gender: "f",  correctPillId: "akk-die"   },
+  // Direct object / dative-verb sentences (no preposition)
+  { kind: "article", prep: akk(""),      sentence: "Ich sehe _____ Hund.",                    sentenceEn: "I see the dog.",                           nounDe: "Hund",       nounEn: "dog",      nounArticle: "den",   gender: "m",  correctPillId: "akk-den"   },
+  { kind: "article", prep: dat(""),      sentence: "Sie hilft _____ Kind.",                   sentenceEn: "She helps the child.",                     nounDe: "Kind",       nounEn: "child",    nounArticle: "dem",   gender: "n",  correctPillId: "dat-dem2"  },
+  { kind: "article", prep: akk(""),      sentence: "Er liebt _____ Frau.",                    sentenceEn: "He loves the woman.",                      nounDe: "Frau",       nounEn: "woman",    nounArticle: "die",   gender: "f",  correctPillId: "akk-die"   },
+];
 
 /** Helpers for Learn-mode tap validation against the active question. */
 const INDEF_RE = /^[a-z]+-ein/;

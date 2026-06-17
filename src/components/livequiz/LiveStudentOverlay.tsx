@@ -197,10 +197,12 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
   if (session.phase !== "active" || !q) return null;
 
   const isPronoun = q.kind === "pronoun";
-  const prompt = isPronoun
+  const prompt = q.sentence
+    ? q.sentence.replace("_____", "___")
+    : isPronoun
     ? `${q.prefix ?? ""} ${q.prep.token} ___ ${q.suffix ?? ""}`.trim()
     : `${q.prefix ?? ""} ${q.prep.token} ___ ${q.nounDe}${q.suffix ? " " + q.suffix : ""}`.trim();
-  const promptEn = isPronoun ? q.targetEn : `${q.nounArticle} ${q.nounEn}`;
+  const promptEn = q.sentenceEn ?? (isPronoun ? q.targetEn : `${q.nounArticle ?? ""} ${q.nounEn ?? ""}`.trim());
 
   return (
     <>
