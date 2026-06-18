@@ -1076,7 +1076,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
       </header>
 
 
-      {isPortraitMobile ? (
+      {!hidePoster && (isPortraitMobile ? (
         <MobilePosterSlider
           posterRef={posterRef}
           activeCase={activeCase}
