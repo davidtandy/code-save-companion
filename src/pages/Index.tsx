@@ -923,6 +923,8 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
     return { caseRect, groupRect, wordRect, subRect };
   })();
 
+  const hidePoster = isPortraitMobile && liveStudent && (!livePhase || livePhase === "lobby" || livePhase === "results" || livePhase === "ended");
+
   const mainContent = (
     <>
     {liveTeacher && <TeacherPanel />}
