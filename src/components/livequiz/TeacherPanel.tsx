@@ -378,7 +378,7 @@ export function TeacherPanel() {
     return () => clearTimeout(t);
   }, [showBreakdown, session?.current_question_index]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const sentence = activeQ
+  const sentence = activeQ && session?.game_mode !== "question-words" && session?.game_mode !== "wfragen"
     ? activeQ.sentence
       ? (() => {
           const [deBefore, deAfter] = activeQ.sentence.split("_____");
