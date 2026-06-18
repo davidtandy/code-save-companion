@@ -1374,11 +1374,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
     </>
   );
 
-  return liveStudent ? (
-    <LiveQuizProvider sessionId={liveStudent.session_id} studentId={liveStudent.student_id}>
-      {mainContent}
-    </LiveQuizProvider>
-  ) : mainContent;
+  return mainContent;
 };
 
 export default Index;
