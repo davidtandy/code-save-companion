@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import QRCode from "react-qr-code";
 import { avatarSrc } from "./avatars";
-import { sampleQuestions, PILL_LABEL, eliminationTiersData, computeElimCount } from "./scoring";
+import { sampleQuestions, sampleWFragenQuestions, PILL_LABEL, eliminationTiersData, computeElimCount } from "./scoring";
+import { TeacherWFragenDisplay } from "./TeacherWFragenDisplay";
 import { Play, SkipForward, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 
 const FAKE_STUDENTS = [
@@ -15,27 +16,53 @@ const FAKE_STUDENTS = [
 
 const TIMER_MAX_MS = 30_000;
 
-function buildPreviewSentence(q: any): { deBefore: string; hint: string; deAfter: string; en: string } {
+function artEnFromArticle(a: string): string {
+  if (!a || a === "—") return "";
+  if (["ein", "eine", "einen", "einem", "einer"].includes(a)) return "a";
+  return "the";
+}
+function buildPreviewSentence(q: any): { deBefore: string; hint: string; deAfter: string; en: string; enBefore: string; enBlank: string; enAfter: string } {
   if (q.sentence) {
     const [deBefore, deAfter] = q.sentence.split("_____");
-    return { deBefore: deBefore ?? "", hint: "?", deAfter: deAfter ?? "", en: q.sentenceEn ?? "" };
+    const artEn = artEnFromArticle(q.nounArticle ?? "");
+    const nounEn: string = q.nounEn ?? "";
+    const sentEn: string = q.sentenceEn ?? "";
+    let enBefore = sentEn, enBlank = "", enAfter = "";
+    if (artEn && nounEn) {
+      const target = ` ${artEn} ${nounEn}`;
+      const idx = sentEn.toLowerCase().indexOf(target.toLowerCase());
+      if (idx !== -1) { enBefore = sentEn.slice(0, idx + 1); enBlank = artEn; enAfter = sentEn.slice(idx + 1 + artEn.length); }
+    }
+    return { deBefore: deBefore ?? "", hint: "?", deAfter: deAfter ?? "", en: sentEn, enBefore, enBlank, enAfter };
   }
-  return { deBefore: `… ${q.prep?.token ?? ""} `, hint: "?", deAfter: ` ${q.nounDe ?? "…"}.`, en: "" };
+  return { deBefore: `… ${q.prep?.token ?? ""} `, hint: "?", deAfter: ` ${q.nounDe ?? "…"}.`, en: "", enBefore: "", enBlank: "", enAfter: "" };
 }
 
+const WRONG_WWORD = ["WER", "WEN", "WEM", "WO", "WOHIN"];
+
 function makeFakeResponses(q: any, startedAt: number, questionIndex: number) {
+  const isWfragen = q.kind === "wfragen";
   return FAKE_STUDENTS.map((s, i) => {
-    // Rotate who gets it wrong each round so rankings shift
     const isCorrect = i !== (questionIndex % FAKE_STUDENTS.length);
     const elapsed = 3000 + i * 2000 + (questionIndex % 3) * 500;
     const ratio = Math.max(0, 1 - elapsed / TIMER_MAX_MS);
     const points = isCorrect ? Math.round(500 + 500 * ratio) : 0;
+    let answer: string;
+    if (isWfragen) {
+      if (q.step === "wword") {
+        answer = isCorrect ? q.correctWWord : WRONG_WWORD.find((w) => w !== q.correctWWord) ?? "WER";
+      } else {
+        answer = isCorrect ? q.correctPillId : "nom-der";
+      }
+    } else {
+      answer = isCorrect ? q.correctPillId : "nom-der";
+    }
     return {
       student_id: s.id,
       student_name: s.name,
       student_avatar: s.avatar,
       question_index: questionIndex,
-      answer: isCorrect ? q.correctPillId : "nom-der",
+      answer,
       is_correct: isCorrect,
       response_ms: elapsed,
       points,
@@ -45,6 +72,8 @@ function makeFakeResponses(q: any, startedAt: number, questionIndex: number) {
 
 export function TeacherPreviewPanel() {
   const [phase, setPhase] = useState<"idle" | "lobby" | "active" | "results">("idle");
+  const [gameMode, setGameMode] = useState<"article" | "wfragen">("article");
+  const [wfragenLevel, setWfragenLevel] = useState<"easy" | "hard">("easy");
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [questionStartedAt, setQuestionStartedAt] = useState<number>(Date.now());
@@ -52,7 +81,7 @@ export function TeacherPreviewPanel() {
   const [panelExpanded, setPanelExpanded] = useState(false);
   const [statsExpanded, setStatsExpanded] = useState(false);
   const [prevRankOrder, setPrevRankOrder] = useState<string[]>([]);
-  const [pillAvatars, setPillAvatars] = useState<{ key: string; x: number; y: number; avatarKey: string; delayMs: number }[]>([]);
+  const [pillAvatars, setPillAvatars] = useState<{ key: string; x: number; y: number; avatarKey: string; delayMs: number; floatDur: number; floatPhase: number }[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -68,7 +97,7 @@ export function TeacherPreviewPanel() {
   const timeRatio = Math.max(0, Math.min(1, 1 - elapsed / TIMER_MAX_MS));
   const timerExpired = timeRatio <= 0;
 
-  const tiers = activeQ ? eliminationTiersData(activeQ) : null;
+  const tiers = (activeQ && activeQ.kind !== "wfragen") ? eliminationTiersData(activeQ) : null;
   const cappedElimCount = (phase === "active" && tiers)
     ? computeElimCount(elapsed, TIMER_MAX_MS, tiers.tier0Count, tiers.tier1Count, tiers.tier2Count, tiers.tier3Count, tiers.tier4Count)
     : 0;
@@ -90,7 +119,7 @@ export function TeacherPreviewPanel() {
     const clear = () =>
       document.querySelectorAll("[data-quiz-correct]").forEach((el) => el.removeAttribute("data-quiz-correct"));
     clear();
-    if (!showBreakdown || !activeQ) return clear;
+    if (!showBreakdown || !activeQ || activeQ.kind === "wfragen") return clear;
     document.querySelectorAll(`[data-cell-id="${activeQ.correctPillId}"]`).forEach((el) =>
       (el as HTMLElement).setAttribute("data-quiz-correct", "1"),
     );
@@ -140,7 +169,7 @@ export function TeacherPreviewPanel() {
         const cx = rect.left + rect.width / 2 - totalW / 2 - 6;
         const cy = rect.bottom - 6;
         keys.forEach((avatarKey, i) => {
-          avatars.push({ key: `${pillId}-${i}`, x: cx + i * spacing, y: cy, avatarKey, delayMs: gi * 55 });
+          avatars.push({ key: `${pillId}-${i}`, x: cx + i * spacing, y: cy, avatarKey, delayMs: gi * 55, floatDur: 1.8 + Math.random() * 1.6, floatPhase: Math.random() * 2400 });
           gi++;
         });
       }
@@ -150,7 +179,7 @@ export function TeacherPreviewPanel() {
   }, [showBreakdown, currentIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function startQuiz() {
-    const qs = sampleQuestions(20);
+    const qs = gameMode === "wfragen" ? sampleWFragenQuestions(wfragenLevel) : sampleQuestions(20);
     const now = Date.now();
     setQuestions(qs);
     setCurrentIdx(0);
@@ -226,7 +255,17 @@ export function TeacherPreviewPanel() {
             transition: "flex-grow 0.5s ease-in-out, opacity 0.35s ease-in-out, max-height 0.5s ease-in-out",
           }}
         >
-          {activeQ && sentence && (
+          {activeQ && activeQ.kind === "wfragen" ? (
+            <TeacherWFragenDisplay
+              q={activeQ}
+              questionIndex={currentIdx}
+              totalQuestions={questions.length}
+              responses={responses}
+              showBreakdown={showBreakdown}
+              answeredThisQ={answeredThisQ}
+              participantCount={FAKE_STUDENTS.length}
+            />
+          ) : activeQ && sentence && (
             <>
               <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold bg-white/70 backdrop-blur-sm rounded-full px-3 py-1">
                 Q{currentIdx + 1} / {questions.length}
@@ -247,7 +286,9 @@ export function TeacherPreviewPanel() {
               </div>
               {sentence.en && (
                 <div className="text-2xl text-poster-ink/60 font-medium drop-shadow-sm italic">
-                  {sentence.en}
+                  {sentence.enBefore}
+                  {sentence.enBlank && <span style={{ borderBottom: "2px solid currentColor", paddingBottom: 1 }}>{sentence.enBlank}</span>}
+                  {sentence.enAfter}
                 </div>
               )}
             </>
@@ -277,6 +318,45 @@ export function TeacherPreviewPanel() {
 
           {!collapsed && (
             <div className={cn("p-4 space-y-3 overflow-y-auto", panelExpanded ? "flex-1" : "max-h-[40vh]")}>
+              {(phase === "idle" || phase === "lobby") && (
+                <div className="space-y-2">
+                  <div className="text-[10px] uppercase tracking-widest text-poster-ink/40 font-semibold">Game</div>
+                  <div className="flex gap-2">
+                    {(["article", "wfragen"] as const).map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setGameMode(m)}
+                        className={cn(
+                          "flex-1 py-2 rounded-lg text-xs font-bold border transition-colors",
+                          gameMode === m
+                            ? "bg-poster-teal text-white border-poster-teal"
+                            : "border-poster-ink/20 text-poster-ink/50 hover:border-poster-teal/40",
+                        )}
+                      >
+                        {m === "article" ? "Article Quiz" : "W-Fragen"}
+                      </button>
+                    ))}
+                  </div>
+                  {gameMode === "wfragen" && (
+                    <div className="flex gap-2">
+                      {(["easy", "hard"] as const).map((l) => (
+                        <button
+                          key={l}
+                          onClick={() => setWfragenLevel(l)}
+                          className={cn(
+                            "flex-1 py-1.5 rounded-lg text-xs font-bold border capitalize transition-colors",
+                            wfragenLevel === l
+                              ? "bg-poster-yellow text-white border-poster-yellow"
+                              : "border-poster-ink/20 text-poster-ink/40 hover:border-poster-yellow/40",
+                          )}
+                        >
+                          {l}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               {phase === "idle" ? (
                 <button
                   onClick={() => setPhase("lobby")}
@@ -286,30 +366,6 @@ export function TeacherPreviewPanel() {
                 </button>
               ) : showBreakdown && phase === "active" ? (
                 <>
-                  {/* Per-student answers */}
-                  <div className="space-y-1.5">
-                    <div className="text-[10px] uppercase tracking-widest text-poster-ink/40 font-semibold">Answers</div>
-                    {FAKE_STUDENTS.map((s) => {
-                      const r = responses.find((r) => r.student_id === s.id && r.question_index === currentIdx);
-                      return (
-                        <div key={s.id} className="flex items-center gap-2 rounded-full px-3 py-1.5 bg-white/60">
-                          <img src={avatarSrc(s.avatar)} alt="" className="w-6 h-6" draggable={false} />
-                          <span className="flex-1 text-sm font-semibold text-poster-ink truncate">{s.name}</span>
-                          {r ? (
-                            <>
-                              <span className="text-xs font-bold text-poster-ink/40">{PILL_LABEL[r.answer] ?? r.answer}</span>
-                              <span className={cn("text-sm font-bold w-5 text-center", r.is_correct ? "text-poster-teal" : "text-poster-red")}>
-                                {r.is_correct ? "✓" : "✗"}
-                              </span>
-                              {r.points > 0 && <span className="text-xs font-bold text-poster-yellow tabular-nums">+{r.points}</span>}
-                            </>
-                          ) : (
-                            <span className="text-xs text-poster-ink/25 italic">no answer</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
                   {/* Rankings */}
                   {sessionLeaderboard.length > 0 && (
                     <div className="space-y-1">
@@ -322,7 +378,7 @@ export function TeacherPreviewPanel() {
                           <div
                             key={t.id}
                             className={cn("flex items-center gap-2 rounded-full px-3 py-1.5", i === 0 ? "bg-poster-yellow" : "bg-white/60")}
-                            style={statsExpanded && slideFromPx !== 0 ? { '--rank-slide-from': `${slideFromPx}px`, animation: 'rank-slide 0.55s ease-out both' } as React.CSSProperties : undefined}
+                            style={statsExpanded && slideFromPx !== 0 ? { '--rank-slide-from': `${slideFromPx}px`, animation: 'rank-slide 1.1s ease-out both' } as React.CSSProperties : undefined}
                           >
                             <span className={cn("text-xs font-bold w-4 text-center", i === 0 ? "text-white" : "text-poster-ink/30")}>{i + 1}</span>
                             <img src={avatarSrc(t.avatar)} alt="" className="w-5 h-5" draggable={false} />
@@ -413,11 +469,11 @@ export function TeacherPreviewPanel() {
         </div>
       </div>
 
-      {pillAvatars.map(({ key, x, y, avatarKey, delayMs }) => (
+      {pillAvatars.map(({ key, x, y, avatarKey, delayMs, floatDur, floatPhase }) => (
         <div
           key={key}
           className="fixed z-[300] pointer-events-none avatar-scatter"
-          style={{ left: x, top: y, animationDelay: `${delayMs}ms` }}
+          style={{ left: x, top: y, '--scatter-delay': `${delayMs}ms`, '--float-dur': `${floatDur}s`, '--float-phase': `${floatPhase}ms` } as React.CSSProperties}
         >
           <img src={avatarSrc(avatarKey)} alt="" className="w-3 h-3 rounded-full shadow ring-1 ring-white" draggable={false} />
         </div>

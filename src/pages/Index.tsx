@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Home, Menu, Play, Compass, HelpCircle, BookOpen, Target, Brain, ChevronDown, ArrowLeftRight, Lock } from "lucide-react";
+import { Home, Menu, Play, Compass, HelpCircle, BookOpen, Target, Brain, ChevronDown, Navigation } from "lucide-react";
 import type { CaseColorMode } from "@/components/poster/colorizeSentence";
 import { buildMorphMap, selectionRevealsPossessiveRow, POSSESSIVE_IDS, EIN_ARTICLES } from "@/components/poster/morph";
 import { useQuiz } from "@/components/poster/quiz/useQuiz";
@@ -25,15 +25,16 @@ import { usePortraitMobile, useIsLandscapeMobile } from "@/hooks/usePortraitMobi
 import { MobilePosterSlider, MOBILE_SLIDER_BAR_H } from "@/components/poster/MobilePosterSlider";
 import { VerbCloudOverlay } from "@/components/poster/VerbCloudOverlay";
 import { WFragenGame, type WFragenHandle } from "@/components/poster/quiz/WFragenGame";
-import { ArticleMutationGame, type ArticleMutationHandle } from "@/components/poster/quiz/ArticleMutationGame";
-import { PrepLockGame, type PrepLockHandle } from "@/components/poster/quiz/PrepLockGame";
+import { PrepTrainerGame } from "@/components/poster/quiz/PrepTrainerGame";
+import { QuestionWordTuner } from "@/components/poster/QuestionWordTuner";
+import { loadZones, type QWZoneConfig } from "@/components/poster/QuestionWordSVGMap";
+import bicycleSvg from "@/assets/poster/bicycle.svg";
+import chefHatSvg from "@/assets/poster/chef-hat.svg";
+import envelopeSvg from "@/assets/poster/envelope.svg";
 import { CaseHeaderPopup, type IconRect } from "@/components/poster/CaseHeaderPopup";
 import { WelcomeModal } from "@/components/WelcomeModal";
 import { CursorDemo } from "@/components/CursorDemo";
 import { IntroStage } from "@/components/IntroStage";
-import bicycle from "@/assets/poster/bicycle.svg";
-import seinCloud from "@/assets/poster/chef-hat.svg";
-import envelope from "@/assets/poster/envelope.svg";
 import { StudentLobby, type StudentIdentity } from "@/components/livequiz/StudentLobby";
 import { TeacherPanel } from "@/components/livequiz/TeacherPanel";
 import { TeacherPreviewPanel } from "@/components/livequiz/TeacherPreviewPanel";
@@ -86,15 +87,14 @@ function getHoverInfo(rawId: string) {
   };
 }
 
-type GameMode = "explore" | "learn-articles" | "practice-articles" | "question-words" | "article-mutation" | "prep-lock";
+type GameMode = "explore" | "learn-articles" | "practice-articles" | "question-words" | "prep-trainer";
 
 const GAME_OPTIONS: { value: GameMode; label: string; icon: React.ElementType; description: string }[] = [
   { value: "explore",          label: "Explore",           icon: Compass,  description: "Browse the cheatsheet freely" },
   { value: "learn-articles",   label: "Learn the Cheatsheet",    icon: BookOpen, description: "Guided walkthrough of cases, pronouns & articles" },
   { value: "practice-articles",label: "Practice Articles", icon: Target,   description: "Test your article knowledge" },
   { value: "question-words",    label: "Question Words",    icon: Brain,          description: "Master WER, WEN, WEM and more" },
-  { value: "article-mutation", label: "Article Mutation",  icon: ArrowLeftRight, description: "Click the article after the case changes" },
-  { value: "prep-lock",        label: "Preposition Lock",  icon: Lock,           description: "Find the case a preposition takes" },
+  { value: "prep-trainer",      label: "Prep Trainer",      icon: Navigation,     description: "Find where each preposition lives" },
 ];
 
 const Index = () => {
@@ -163,15 +163,16 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
   const [mobileInfoVisible, setMobileInfoVisible] = useState(false);
   const [verbCloudOpen, setVerbCloudOpen] = useState(false);
   const [gameMode, setGameMode] = useState<GameMode>("explore");
-  const articleMutationRef = useRef<ArticleMutationHandle>(null);
-  const prepLockRef = useRef<PrepLockHandle>(null);
   const wFragenRef = useRef<WFragenHandle>(null);
+  const [qwZones, setQwZones] = useState<QWZoneConfig>(loadZones);
+  const [qwSelectedWord, setQwSelectedWord] = useState<string | null>(null);
+  const [qwCorrectWord, setQwCorrectWord]   = useState<string | null>(null);
+  const [qwWrongWord, setQwWrongWord]       = useState<string | null>(null);
+  const [showQwTuner, setShowQwTuner] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).has("qwtune"));
   const [showWelcome, setShowWelcome] = useState(true);
   const [showCursorDemo, setShowCursorDemo] = useState(false);
   const [showIntroStage, setShowIntroStage] = useState(false);
   const [introNomOnly, setIntroNomOnly] = useState(false);
-  const [prepLockStep, setPrepLockStep] = useState<"case" | "article">("case");
-  const [prepLockCase, setPrepLockCase] = useState<"akk" | "nom" | "dat" | null>(null);
   const [learnLockedGroup, setLearnLockedGroup] = useState<string | null>(null);
   const [learnLockedRow, setLearnLockedRow] = useState<string | null>(null);
   const learnDimConfig = useMemo(() => {
@@ -190,8 +191,16 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
     else if (mode === "practice-articles") { setQuizMode("practice"); goOverview(); quiz.start({ includeNom: quizIncludeNom, mode: "practice" }); }
     else if (mode === "question-words") { if (quiz.active) quiz.exit(); }
   }
+
+  // Mutual exclusion: reset solo games when live quiz is active
+  useEffect(() => {
+    if (liveTeacher || liveTeacherPreview || !!liveStudent) {
+      setGameMode("explore");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [casePopup, setCasePopup] = useState<{ caseKey: CaseKey; iconRect: IconRect } | null>(null);
-  const CASE_ICONS: Record<CaseKey, string> = { akk: bicycle, nom: seinCloud, dat: envelope };
+  const CASE_ICONS: Record<CaseKey, string> = { akk: bicycleSvg, nom: chefHatSvg, dat: envelopeSvg };
   type Rect = { left: number; top: number; width: number; height: number };
   const [tourCutouts, setTourCutouts] = useState<Rect[]>([]);
   const [hoverTooltip, setHoverTooltip] = useState<{ id: string; x: number; y: number } | null>(null);
@@ -460,18 +469,19 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
     handleTapCase(c);
   };
 
+  function handleTapQuestionWord(word: string) {
+    setQwSelectedWord(word);
+    setQwCorrectWord(null);
+    setQwWrongWord(null);
+    wFragenRef.current?.onWordTap(word);
+    // brief highlight then clear — feedback comes back via the game card
+    setTimeout(() => setQwSelectedWord(null), 800);
+  }
+
   /** Quiz-aware word tap — shared by landscape Poster and portrait carousel. */
   const handlePosterTapWord = (id: string) => {
     if (liveQuizSubmit.current) {
       liveQuizSubmit.current(id);
-      return;
-    }
-    if (gameMode === "article-mutation") {
-      articleMutationRef.current?.onPillTap(id);
-      return;
-    }
-    if (gameMode === "prep-lock") {
-      prepLockRef.current?.onPillTap(id);
       return;
     }
     if (gameMode === "question-words") {
@@ -916,10 +926,10 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
         quizFillMode={quizFillMode}
       />
     )}
-    {!liveStudent && !liveTeacher && showWelcome && (
+    {!liveStudent && !liveTeacher && !liveTeacherPreview && showWelcome && (
       <WelcomeModal onDismiss={() => dismissWelcome(false)} onTour={() => dismissWelcome(true)} isMobile={isPortraitMobile} />
     )}
-    {!liveStudent && !liveTeacher && showCursorDemo && (
+    {!liveStudent && !liveTeacher && !liveTeacherPreview && showCursorDemo && (
       <CursorDemo isMobile={isPortraitMobile} onDone={() => setShowCursorDemo(false)} onReset={goOverview} />
     )}
     {!liveStudent && !liveTeacher && showIntroStage && (
@@ -1127,7 +1137,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
             style={{
               width: POSTER_W,
               height: quizFillMode ? POSTER_H - 120 : POSTER_H,
-              transform: `translate(${pan.x}px, ${pan.y + (quizFillMode ? 40 : 0)}px) scale(${renderedScale})`,
+              transform: `translate(${pan.x + (liveTeacher ? 230 : 0)}px, ${pan.y + (quizFillMode ? 40 : 0)}px) scale(${renderedScale})`,
               transformOrigin: "center center",
             }}
             className="relative shrink-0"
@@ -1143,9 +1153,8 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
               onTapBackground={handleTapBackground}
               onTapVerbCloud={() => setVerbCloudOpen(true)}
               onTapCaseIcon={(c, rect) => setCasePopup({ caseKey: c, iconRect: rect })}
-              caseHoverDim={(gameMode === "prep-lock" && prepLockStep === "case") || (quiz.active && quiz.mode === "learn" && quiz.learnStep === 1 && !learnOverlayConfig)}
+              caseHoverDim={quiz.active && quiz.mode === "learn" && quiz.learnStep === 1 && !learnOverlayConfig}
               pinnedCase={
-                (gameMode === "prep-lock" && prepLockStep === "article" ? prepLockCase : null) ??
                 (quiz.active && quiz.mode === "learn" && quiz.learnStep >= 2 && quiz.question ? quiz.question.prep.case : null)
               }
               learnDim={learnDimConfig}
@@ -1157,6 +1166,11 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
               quizActive={quiz.active}
               hidePossessives={!!liveStudent}
               quizFill={quizFillMode}
+              onTapQuestionWord={gameMode === "question-words" ? handleTapQuestionWord : undefined}
+              questionWordSelected={gameMode === "question-words" ? qwSelectedWord : null}
+              questionWordCorrect={gameMode === "question-words" ? qwCorrectWord : null}
+              questionWordWrong={gameMode === "question-words" ? qwWrongWord : null}
+              questionWordZones={qwZones}
             />
           </div>
         </div>
@@ -1292,18 +1306,13 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
           onExit={() => setGameMode("explore")}
         />
       )}
-      {gameMode === "article-mutation" && (
-        <ArticleMutationGame ref={articleMutationRef} onFlash={triggerFlash} onExit={() => setGameMode("explore")} />
+      {gameMode === "prep-trainer" && (
+        <PrepTrainerGame onExit={() => setGameMode("explore")} />
       )}
-      {gameMode === "prep-lock" && (
-        <PrepLockGame
-          ref={prepLockRef}
-          onFlash={triggerFlash}
-          onStepChange={(step, caseKey) => {
-            setPrepLockStep(step);
-            setPrepLockCase(step === "article" && caseKey ? caseKey : null);
-          }}
-          onExit={() => { setGameMode("explore"); setPrepLockStep("case"); setPrepLockCase(null); }}
+      {showQwTuner && (
+        <QuestionWordTuner
+          onClose={() => setShowQwTuner(false)}
+          onChange={(z) => setQwZones(z)}
         />
       )}
       {!isPortraitMobile && <FlourishTuner />}

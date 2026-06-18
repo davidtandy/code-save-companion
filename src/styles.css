@@ -378,8 +378,29 @@ body {
   70%  { opacity: 1; transform: scale(1.18) translateY(2px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
+@keyframes avatar-float {
+  0%   { transform: translate(0px,    0px)    rotate(0deg); }
+  20%  { transform: translate(1.5px,  -2px)   rotate(1.5deg); }
+  45%  { transform: translate(-1px,   -1.5px) rotate(-1deg); }
+  65%  { transform: translate(2px,    1px)    rotate(1deg); }
+  85%  { transform: translate(-1.5px, -1.5px) rotate(-1.5deg); }
+  100% { transform: translate(0px,    0px)    rotate(0deg); }
+}
 .avatar-scatter {
-  animation: avatar-scatter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation:
+    avatar-scatter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    avatar-float var(--float-dur, 2.6s) ease-in-out infinite;
+  animation-delay: var(--scatter-delay, 0ms), calc(var(--scatter-delay, 0ms) + 0.4s + var(--float-phase, 0ms));
+}
+
+/* Teacher stats panel slide up from bottom */
+@keyframes panel-slide-up {
+  from { transform: scaleY(0); opacity: 0; }
+  to   { transform: scaleY(1); opacity: 1; }
+}
+.panel-slide-up {
+  transform-origin: bottom center;
+  animation: panel-slide-up 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 /* Ranking row slide to new position when stats expand */
@@ -445,4 +466,16 @@ body {
 .rotate-prompt-phone {
   animation: rotate-hint 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   transform-origin: center;
+}
+
+@keyframes prep-shake {
+  0%, 100% { transform: translateX(0); }
+  18%  { transform: translateX(-6px); }
+  36%  { transform: translateX(6px); }
+  54%  { transform: translateX(-4px); }
+  72%  { transform: translateX(4px); }
+  88%  { transform: translateX(-2px); }
+}
+.prep-shake {
+  animation: prep-shake 0.38s ease-in-out;
 }

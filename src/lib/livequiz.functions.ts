@@ -177,7 +177,12 @@ export const submitResponse = createServerFn({ method: "POST" })
     const startedAt = sess.question_started_at ? new Date(sess.question_started_at).getTime() : Date.now();
     const elapsed = Math.max(0, Date.now() - startedAt);
     const timerMaxMs = (sess.timer_max_seconds || 30) * 1000;
-    const correct = data.answer === q.correctPillId;
+    const correctKey = q.kind === "question-words"
+      ? q.correctAnswer
+      : q.kind === "wfragen"
+        ? (q.step === "wword" ? q.correctWWord : q.correctPillId)
+        : q.correctPillId;
+    const correct = data.answer.toUpperCase() === String(correctKey).toUpperCase();
     let points = 0;
     if (correct) {
       const ratio = Math.max(0, 1 - elapsed / timerMaxMs);

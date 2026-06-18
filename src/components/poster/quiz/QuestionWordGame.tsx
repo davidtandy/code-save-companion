@@ -1,43 +1,37 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
+type CaseColor = "nom" | "akk" | null;
+
 const WORDS = [
-  {
-    word: "WER",
-    meaning: "who (subject)",
-    mnemonic: "WER = WORker — the one doing the work.",
-  },
-  {
-    word: "WEN",
-    meaning: "whom (direct object)",
-    mnemonic: "WEN is the one getting went after. No M — the action hits directly, no \"to/for\" middleman.",
-  },
-  {
-    word: "WEM",
-    meaning: "to/for whom (indirect object)",
-    mnemonic: "WEM has M for Mail — you send something TO them. Rhymes with \"them.\"",
-  },
-  {
-    word: "WAS",
-    meaning: "what",
-    mnemonic: "WHAT with a German accent.",
-  },
-  {
-    word: "WO",
-    meaning: "where (location)",
-    mnemonic: "WHOA — stop moving. Just a location.",
-  },
-  {
-    word: "WOHIN",
-    meaning: "where to (direction)",
-    mnemonic: "\"where IN\" — going into somewhere.",
-  },
-  {
-    word: "WANN",
-    meaning: "when",
-    mnemonic: "\"when, man?\"",
-  },
+  { word: "WER",   meaning: "who (subject)",              mnemonic: "WER = WORker — the one doing the work.",                                                                  caseColor: "nom" as CaseColor },
+  { word: "WEN",   meaning: "whom (direct object)",        mnemonic: "WEN is the one getting went after. No M — the action hits directly, no \"to/for\" middleman.",            caseColor: "akk" as CaseColor },
+  { word: "WEM",   meaning: "to/for whom (indirect object)",mnemonic: "WEM has M for Mail — you send something TO them. Rhymes with \"them.\"",                                 caseColor: "akk" as CaseColor },
+  { word: "WAS",   meaning: "what",                        mnemonic: "WHAT with a German accent.",                                                                               caseColor: null  as CaseColor },
+  { word: "WO",    meaning: "where (location)",             mnemonic: "WHOA — stop moving. Just a location.",                                                                    caseColor: null  as CaseColor },
+  { word: "WOHIN", meaning: "where to (direction)",         mnemonic: "\"where IN\" — going into somewhere.",                                                                    caseColor: null  as CaseColor },
+  { word: "WANN",  meaning: "when",                         mnemonic: "\"when, man?\"",                                                                                          caseColor: null  as CaseColor },
 ];
+
+function answerButtonClass(
+  answer: string,
+  selectedAnswer: string | null,
+  feedback: "correct" | "wrong" | "revealed" | null,
+  correctAnswer: string,
+  isWordToMeaning: boolean,
+) {
+  const isSelected = selectedAnswer === answer;
+  const isCorrect = answer === correctAnswer;
+  const entry = WORDS.find((w) => (isWordToMeaning ? w.meaning === answer : w.word === answer));
+  const base = "w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors";
+  if (feedback === "correct" && isSelected)    return cn(base, "bg-green-50 border-green-400 text-green-700 font-semibold");
+  if (feedback === "revealed" && isCorrect)    return cn(base, "bg-green-50 border-green-400 text-green-700 font-semibold");
+  if (feedback === "wrong" && isSelected)      return cn(base, "bg-red-50 border-red-300 text-red-600");
+  if (feedback === "revealed" && !isCorrect)   return cn(base, "border-poster-ink/10 text-poster-ink/30");
+  if (entry?.caseColor === "nom") return cn(base, "bg-yellow-50 border-yellow-300 text-yellow-900 hover:bg-yellow-100");
+  if (entry?.caseColor === "akk") return cn(base, "bg-green-50 border-green-300 text-green-900 hover:bg-green-100");
+  return cn(base, "border-poster-ink/15 text-poster-ink hover:bg-poster-bg");
+}
 
 type Direction = "word-to-meaning" | "meaning-to-word";
 type Question = { direction: Direction; promptIndex: number };
@@ -253,26 +247,15 @@ export function QuestionWordGame({ onExit }: Props) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        {answers.map((answer) => {
-          const isSelected = selectedAnswer === answer;
-          const isCorrect = answer === correctAnswer;
-          return (
-            <button
-              key={answer}
-              onClick={() => handleAnswer(answer)}
-              className={cn(
-                "w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors",
-                feedback === "correct" && isSelected && "bg-green-50 border-green-400 text-green-700 font-semibold",
-                feedback === "revealed" && isCorrect && "bg-green-50 border-green-400 text-green-700 font-semibold",
-                feedback === "wrong" && isSelected && "bg-red-50 border-red-300 text-red-600",
-                !isSelected && feedback !== "revealed" && "border-poster-ink/15 text-poster-ink hover:bg-poster-bg",
-                feedback === "revealed" && !isCorrect && "border-poster-ink/10 text-poster-ink/30",
-              )}
-            >
-              {answer}
-            </button>
-          );
-        })}
+        {answers.map((answer) => (
+          <button
+            key={answer}
+            onClick={() => handleAnswer(answer)}
+            className={answerButtonClass(answer, selectedAnswer, feedback, correctAnswer, isWordToMeaning)}
+          >
+            {answer}
+          </button>
+        ))}
       </div>
     </div>
   );

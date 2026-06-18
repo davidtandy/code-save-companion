@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getSessionById, getStudentState } from "@/lib/livequiz.functions";
-import type { QuizQuestion } from "@/components/poster/quiz/quizData";
+import type { LiveQuestion } from "@/components/poster/quiz/quizData";
 
 export type SessionPhase = "lobby" | "active" | "results" | "ended";
 
@@ -14,7 +14,7 @@ export type LiveSession = {
   current_question_index: number;
   question_started_at: string | null;
   timer_max_seconds: number;
-  questions: QuizQuestion[];
+  questions: LiveQuestion[];
   game_mode: string;
 };
 

@@ -56,9 +56,7 @@ function genderClasses(id: string | undefined, mode: GenderMode): string {
   // hover: transparent border reserves space, color appears on hover
   return cn("border-[3px] border-transparent", GENDER_BORDER_HOVER[g]);
 }
-import bicycle from "@/assets/poster/bicycle.svg";
-import seinCloud from "@/assets/poster/chef-hat.svg";
-import envelope from "@/assets/poster/envelope.svg";
+import { QWSvgSingle, loadZones } from "./QuestionWordSVGMap";
 import liebenStamp from "@/assets/poster/lieben.svg";
 import gebenStamp from "@/assets/poster/geben.svg";
 
@@ -110,6 +108,16 @@ type Props = {
   } | null;
   hidePossessives?: boolean;
   quizFill?: boolean;
+  /** When set, case-header SVGs show click zones instead of firing onTapCase */
+  onTapQuestionWord?: (word: string) => void;
+  /** Which word was just selected (for zone highlight) */
+  questionWordSelected?: string | null;
+  /** Which word is correct (green zone) */
+  questionWordCorrect?: string | null;
+  /** Which word is wrong (red zone) */
+  questionWordWrong?: string | null;
+  /** Zones config (defaults to stored/default) */
+  questionWordZones?: import("./QuestionWordSVGMap").QWZoneConfig;
 };
 
 /* ---------- Atoms ---------- */
@@ -230,8 +238,8 @@ const Pill = ({
       className={cn(
         "rounded-sm flex justify-center text-white font-slab font-medium shadow-sm select-none",
         "transition-transform active:scale-95 gap-1",
-        clipSide === "left"  ? "items-start relative z-10"  :
-        clipSide === "right" ? "items-end relative -translate-x-9"  : "items-center",
+        clipSide === "left"  ? "items-start pt-1 relative z-10"  :
+        clipSide === "right" ? "items-end pb-1 relative -translate-x-9"  : "items-center",
         slim ? "h-7 text-xs px-1 shadow-none" : "h-9 text-sm",
         bg,
         genderCls,
@@ -401,7 +409,8 @@ const LegendSwatch = ({
 /* ---------- Main poster ---------- */
 
 export const Poster = forwardRef<PosterHandle, Props>(
-  ({ activeCase, activeWordId, morphContextId = null, pinnedPossId = null, onTapCase, onTapCaseIcon, onTapWord, onTapBackground, onTapVerbCloud, genderMode = "off", morphMap = null, flourish = { epoch: 0, indices: new Map() }, quizBlur = false, quizActive = false, slimPills = false, pillPadH = 28, pillPadV = 32, caseGap = 16, mobileZoomedCase, caseHoverDim = false, pinnedCase = null, learnDim = null, learnOverlay = null, hidePossessives = false, quizFill = false }, ref) => {
+  ({ activeCase, activeWordId, morphContextId = null, pinnedPossId = null, onTapCase, onTapCaseIcon, onTapWord, onTapBackground, onTapVerbCloud, genderMode = "off", morphMap = null, flourish = { epoch: 0, indices: new Map() }, quizBlur = false, quizActive = false, slimPills = false, pillPadH = 28, pillPadV = 32, caseGap = 16, mobileZoomedCase, caseHoverDim = false, pinnedCase = null, learnDim = null, learnOverlay = null, hidePossessives = false, quizFill = false, onTapQuestionWord, questionWordSelected = null, questionWordCorrect = null, questionWordWrong = null, questionWordZones }, ref) => {
+    const qwZones = questionWordZones ?? loadZones();
     const rootRef = useRef<HTMLDivElement>(null);
     const cellRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -853,11 +862,17 @@ export const Poster = forwardRef<PosterHandle, Props>(
           >
             {!quizFill && (
             <button
-              onClick={(e) => { onTapCase("akk"); onTapCaseIcon?.("akk", e.currentTarget.getBoundingClientRect()); }}
+              onClick={(e) => { if (!onTapQuestionWord) { onTapCase("akk"); onTapCaseIcon?.("akk", e.currentTarget.getBoundingClientRect()); } }}
               className="w-full flex flex-col items-center mb-2 active:scale-95 transition-transform"
             >
-              <img src={bicycle} alt="Bicycle — Akkusativ WEN • WOHIN (direct object)"
-                   className="h-28 object-contain" draggable={false} />
+              <QWSvgSingle
+                group="akk" zones={qwZones.akk}
+                active={!!onTapQuestionWord}
+                onWordClick={onTapQuestionWord}
+                activeWord={questionWordSelected} correctWord={questionWordCorrect} wrongWord={questionWordWrong}
+                imgClassName="h-28 object-contain w-full"
+                className="w-full"
+              />
             </button>
             )}
 
@@ -884,7 +899,7 @@ export const Poster = forwardRef<PosterHandle, Props>(
             {/* Articles row */}
             <div className="relative mt-2 pl-[calc(28%+0.375rem)]">
               {/* Two-way preps — absolutely positioned so they can't push articles taller */}
-              <div data-group="g-twL" className="absolute inset-y-0 left-0 w-[28%] bg-poster-green rounded-sm py-1 px-1 flex flex-col items-center justify-evenly gap-0 overflow-hidden border-2 border-poster-red-deep">
+              <div data-group="g-twL" className="absolute inset-y-0 left-0 w-[28%] bg-poster-green rounded-sm py-1 px-1 flex flex-col items-center justify-evenly gap-0 overflow-hidden" style={{ border: '3px solid #ef4444' }}>
                 {(["twL-in","twL-auf","twL-an","twL-unter","twL-neben","twL-hinter","twL-unter2","twL-über","twL-vor","twL-zwischen"] as const).map(k => (
                   <PrepWord key={k} word={WORDS[k]} registerRef={registerRef} onTap={tap}
                             active={activeWordId === k} tiny />
@@ -892,21 +907,28 @@ export const Poster = forwardRef<PosterHandle, Props>(
               </div>
 
               {/* Articles grid — extra 1rem width compensates for -translate-x-4 on right pill */}
-              <div data-group="g-akk-art" className="grid grid-cols-2 gap-x-0 gap-y-1.5 content-start" style={{ width: 'calc(100% + 2.25rem)' }}>
-                <Pill word={WORDS["akk-einen"]}  color="green" active={activeWordId==="akk-einen"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left">
-                  ein<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">en</span>
-                </Pill>
-                <Pill word={WORDS["akk-den"]}    color="green" active={activeWordId==="akk-den"}    activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
-                <Pill word={WORDS["akk-eine"]}   color="green" active={activeWordId==="akk-eine"}   activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left">
-                  ein<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">e</span>
-                </Pill>
-                <Pill word={WORDS["akk-die"]}    color="green" active={activeWordId==="akk-die"}    activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
-                <Pill word={WORDS["akk-ein"]}    color="green" active={activeWordId==="akk-ein"}    activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left" />
-                <Pill word={WORDS["akk-das"]}    color="green" active={activeWordId==="akk-das"}    activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
-                <Pill word={WORDS["akk-none"]}   color="green" active={activeWordId==="akk-none"}   activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left" />
-                <Pill word={WORDS["akk-diePl"]}  color="green" active={activeWordId==="akk-diePl"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right">
-                  di<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">e</span>
-                </Pill>
+              <div className="relative">
+                <div data-group="g-akk-art" className="grid grid-cols-2 gap-x-0 gap-y-1.5 content-start" style={{ width: 'calc(100% + 2.25rem)' }}>
+                  <Pill word={WORDS["akk-einen"]}  color="green" active={activeWordId==="akk-einen"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left">
+                    ein<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">en</span>
+                  </Pill>
+                  <Pill word={WORDS["akk-den"]}    color="green" active={activeWordId==="akk-den"}    activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
+                  <Pill word={WORDS["akk-eine"]}   color="green" active={activeWordId==="akk-eine"}   activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left">
+                    ein<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">e</span>
+                  </Pill>
+                  <Pill word={WORDS["akk-die"]}    color="green" active={activeWordId==="akk-die"}    activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
+                  <Pill word={WORDS["akk-ein"]}    color="green" active={activeWordId==="akk-ein"}    activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left" />
+                  <Pill word={WORDS["akk-das"]}    color="green" active={activeWordId==="akk-das"}    activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
+                  <Pill word={WORDS["akk-none"]}   color="green" active={activeWordId==="akk-none"}   activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left" />
+                  <Pill word={WORDS["akk-diePl"]}  color="green" active={activeWordId==="akk-diePl"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right">
+                    di<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">e</span>
+                  </Pill>
+                </div>
+                <div className="absolute top-0 pointer-events-none flex flex-col gap-y-1.5 z-20" style={{ left: 'calc(100% + 8px)', transform: 'translateX(-50%)' }}>
+                  {(["m","f","n","pl"] as const).map(l => (
+                    <div key={l} className="h-9 flex items-center justify-center text-[11px] font-bold text-poster-ink/40 leading-none select-none">{l}</div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -918,11 +940,17 @@ export const Poster = forwardRef<PosterHandle, Props>(
           >
             {!quizFill && (
             <button
-              onClick={(e) => { onTapCase("nom"); onTapCaseIcon?.("nom", e.currentTarget.getBoundingClientRect()); }}
+              onClick={(e) => { if (!onTapQuestionWord) { onTapCase("nom"); onTapCaseIcon?.("nom", e.currentTarget.getBoundingClientRect()); } }}
               className="w-full flex flex-col items-center mb-2 active:scale-95 transition-transform"
             >
-              <img src={seinCloud} alt="Chef hat with sein cloud — Nominativ WER (subject / to be)"
-                   className="h-28 object-contain" draggable={false} />
+              <QWSvgSingle
+                group="nom" zones={qwZones.nom}
+                active={!!onTapQuestionWord}
+                onWordClick={onTapQuestionWord}
+                activeWord={questionWordSelected} correctWord={questionWordCorrect} wrongWord={questionWordWrong}
+                imgClassName="h-28 object-contain w-full"
+                className="w-full"
+              />
             </button>
             )}
 
@@ -956,17 +984,19 @@ export const Poster = forwardRef<PosterHandle, Props>(
 
             {/* Articles — container=134px (118px visual pair + 16px for -translate-x-4 right pill).
                  ml centers the 118px visual footprint, not the 134px layout box. */}
-            <div data-group="g-nom-art" className="grid grid-cols-2 gap-x-0 gap-y-1.5 mt-2" style={{ width: NOM_PRON_ROW_W + 36, marginLeft: `calc((100% - ${NOM_PRON_ROW_W}px) / 2)` }}>
-              <Pill word={WORDS["nom-ein"]}  color="yellow" active={activeWordId==="nom-ein"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left" />
-              <Pill word={WORDS["nom-der"]}  color="yellow" active={activeWordId==="nom-der"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
-              <Pill word={WORDS["nom-eine"]} color="yellow" active={activeWordId==="nom-eine"} activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left">
-                ein<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">e</span>
-              </Pill>
-              <Pill word={WORDS["nom-die"]}  color="yellow" active={activeWordId==="nom-die"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
-              <Pill word={WORDS["nom-ein2"]} color="yellow" active={activeWordId==="nom-ein2"} activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left" />
-              <Pill word={WORDS["nom-das"]}  color="yellow" active={activeWordId==="nom-das"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
-              <Pill word={WORDS["nom-none"]} color="yellow" active={activeWordId==="nom-none"} activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left" />
-              <Pill word={WORDS["nom-diePl"]}color="yellow" active={activeWordId==="nom-diePl"}onTap={tap} registerRef={registerRef} clipSide="right" />
+            <div className="relative mt-2" style={{ width: NOM_PRON_ROW_W, marginLeft: `calc((100% - ${NOM_PRON_ROW_W}px) / 2)` }}>
+              <div data-group="g-nom-art" className="grid grid-cols-2 gap-x-0 gap-y-1.5" style={{ width: 'calc(100% + 2.25rem)' }}>
+                <Pill word={WORDS["nom-ein"]}  color="yellow" active={activeWordId==="nom-ein"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left" />
+                <Pill word={WORDS["nom-der"]}  color="yellow" active={activeWordId==="nom-der"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
+                <Pill word={WORDS["nom-eine"]} color="yellow" active={activeWordId==="nom-eine"} activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left">
+                  ein<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">e</span>
+                </Pill>
+                <Pill word={WORDS["nom-die"]}  color="yellow" active={activeWordId==="nom-die"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
+                <Pill word={WORDS["nom-ein2"]} color="yellow" active={activeWordId==="nom-ein2"} activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left" />
+                <Pill word={WORDS["nom-das"]}  color="yellow" active={activeWordId==="nom-das"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
+                <Pill word={WORDS["nom-none"]} color="yellow" active={activeWordId==="nom-none"} activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left" />
+                <Pill word={WORDS["nom-diePl"]}color="yellow" active={activeWordId==="nom-diePl"}onTap={tap} registerRef={registerRef} clipSide="right" />
+              </div>
             </div>
 
           </div>
@@ -978,11 +1008,17 @@ export const Poster = forwardRef<PosterHandle, Props>(
           >
             {!quizFill && (
             <button
-              onClick={(e) => { onTapCase("dat"); onTapCaseIcon?.("dat", e.currentTarget.getBoundingClientRect()); }}
+              onClick={(e) => { if (!onTapQuestionWord) { onTapCase("dat"); onTapCaseIcon?.("dat", e.currentTarget.getBoundingClientRect()); } }}
               className="w-full flex flex-col items-center mb-2 active:scale-95 transition-transform"
             >
-              <img src={envelope} alt="Envelope — Dativ WEM • WO • WANN"
-                   className="h-28 object-contain" draggable={false} />
+              <QWSvgSingle
+                group="dat" zones={qwZones.dat}
+                active={!!onTapQuestionWord}
+                onWordClick={onTapQuestionWord}
+                activeWord={questionWordSelected} correctWord={questionWordCorrect} wrongWord={questionWordWrong}
+                imgClassName="h-28 object-contain w-full"
+                className="w-full"
+              />
             </button>
             )}
 
@@ -1009,28 +1045,35 @@ export const Poster = forwardRef<PosterHandle, Props>(
 
             {/* Articles row */}
             <div className="relative mt-2 pr-[calc(28%+0.375rem)]">
-              <div data-group="g-dat-art" className="grid grid-cols-2 gap-x-0 gap-y-1.5 content-start" style={{ width: 'calc(100% + 2.25rem)' }}>
-                <Pill word={WORDS["dat-einem"]} color="purple" active={activeWordId==="dat-einem"} activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left">
-                  ein<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">em</span>
-                </Pill>
-                <Pill word={WORDS["dat-dem"]}   color="purple" active={activeWordId==="dat-dem"}   activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
-                <Pill word={WORDS["dat-einer"]} color="purple" active={activeWordId==="dat-einer"} activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left">
-                  ein<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">er</span>
-                </Pill>
-                <Pill word={WORDS["dat-der"]}   color="purple" active={activeWordId==="dat-der"}   activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
-                <Pill word={WORDS["dat-einem2"]}color="purple" active={activeWordId==="dat-einem2"}onTap={tap} registerRef={registerRef} clipSide="left">
-                  ein<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">em</span>
-                </Pill>
-                <Pill word={WORDS["dat-dem2"]}  color="purple" active={activeWordId==="dat-dem2"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
-                <Pill word={WORDS["dat-noneN"]} color="purple" active={activeWordId==="dat-noneN"} activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left">
-                  —…<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">n</span>
-                </Pill>
-                <Pill word={WORDS["dat-denN"]}  color="purple" active={activeWordId==="dat-denN"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right">
-                  den…<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">n</span>
-                </Pill>
+              <div className="relative">
+                <div data-group="g-dat-art" className="grid grid-cols-2 gap-x-0 gap-y-1.5 content-start" style={{ width: 'calc(100% + 2.25rem)' }}>
+                  <Pill word={WORDS["dat-einem"]} color="purple" active={activeWordId==="dat-einem"} activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left">
+                    ein<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">em</span>
+                  </Pill>
+                  <Pill word={WORDS["dat-dem"]}   color="purple" active={activeWordId==="dat-dem"}   activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
+                  <Pill word={WORDS["dat-einer"]} color="purple" active={activeWordId==="dat-einer"} activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left">
+                    ein<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">er</span>
+                  </Pill>
+                  <Pill word={WORDS["dat-der"]}   color="purple" active={activeWordId==="dat-der"}   activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
+                  <Pill word={WORDS["dat-einem2"]}color="purple" active={activeWordId==="dat-einem2"}onTap={tap} registerRef={registerRef} clipSide="left">
+                    ein<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">em</span>
+                  </Pill>
+                  <Pill word={WORDS["dat-dem2"]}  color="purple" active={activeWordId==="dat-dem2"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right" />
+                  <Pill word={WORDS["dat-noneN"]} color="purple" active={activeWordId==="dat-noneN"} activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="left">
+                    —…<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">n</span>
+                  </Pill>
+                  <Pill word={WORDS["dat-denN"]}  color="purple" active={activeWordId==="dat-denN"}  activeWordId={activeWordId} onTap={tap} registerRef={registerRef} clipSide="right">
+                    den…<span data-poster-ending className="text-poster-red-deep font-bold red-ending-halo">n</span>
+                  </Pill>
+                </div>
+                <div className="absolute top-0 pointer-events-none flex flex-col gap-y-1.5 z-20" style={{ left: '-8px', transform: 'translateX(-50%)' }}>
+                  {(["m","f","n","pl"] as const).map(l => (
+                    <div key={l} className="h-9 flex items-center justify-center text-[11px] font-bold text-poster-ink/40 leading-none select-none">{l}</div>
+                  ))}
+                </div>
               </div>
 
-              <div data-group="g-twR" className="absolute inset-y-0 right-0 w-[28%] bg-poster-purple rounded-sm py-1 px-1 flex flex-col items-center justify-evenly gap-0 overflow-hidden border-2 border-poster-red-deep">
+              <div data-group="g-twR" className="absolute inset-y-0 right-0 w-[28%] bg-poster-purple rounded-sm py-1 px-1 flex flex-col items-center justify-evenly gap-0 overflow-hidden" style={{ border: '3px solid #ef4444' }}>
                 {(["twR-in","twR-auf","twR-an","twR-unter","twR-neben","twR-hinter","twR-unter2","twR-über","twR-vor","twR-zwischen"] as const).map(k => (
                   <PrepWord key={k} word={WORDS[k]} registerRef={registerRef} onTap={tap}
                             active={activeWordId === k} tiny />

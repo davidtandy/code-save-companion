@@ -34,6 +34,32 @@ export type QuizQuestion =
       suffixEn?: string;
     };
 
+export type QWQuestion = {
+  kind: "question-words";
+  word: string;
+  meaning: string;
+  direction: "word-to-meaning" | "meaning-to-word";
+  correctAnswer: string;
+  options: string[];
+};
+
+export type WFragenQuestion = {
+  kind: "wfragen";
+  level: "easy" | "hard";
+  step: "wword" | "article";
+  pre: string;
+  boxedPre?: string;
+  boxedNoun: string;
+  post: string;
+  correctWWord: string;   // uppercase: "WER", "WEN", etc.
+  correctPillId: string;
+  answer: string;
+  caseKey: CaseKey;
+  sentenceIndex: number;  // pairs wword+article from the same sentence
+};
+
+export type LiveQuestion = QuizQuestion | QWQuestion | WFragenQuestion;
+
 // ---- shorthands ----
 const akk = (token: string) => ({ token, case: "akk" as CaseKey });
 const dat = (token: string) => ({ token, case: "dat" as CaseKey });

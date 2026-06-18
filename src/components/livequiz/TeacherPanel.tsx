@@ -50,7 +50,7 @@ function articleEn(nounArticle: string): string {
 }
 
 /** Returns sentence parts so the hint word can be rendered greyed in the German blank. */
-function buildSentence(q: any): { deBefore: string; hint: string; deAfter: string; en: string } {
+function buildSentence(q: any): { deBefore: string; hint: string; deAfter: string; en: string; enBefore: string; enBlank: string; enAfter: string } {
   const prep = q.prep.token;
   const ctx = VERB_CTX[prep] ?? { de: "Er geht", en: "He goes" };
   const prepEn = ctx.enPrep ?? PREP_EN[prep] ?? prep;
@@ -65,6 +65,9 @@ function buildSentence(q: any): { deBefore: string; hint: string; deAfter: strin
       hint,
       deAfter: ` ${prep}${sfxDe}.`,
       en: `${hint} ${verbEn}${sfxEn}.`,
+      enBefore: "",
+      enBlank: hint,
+      enAfter: ` ${verbEn}${sfxEn}.`,
     };
   }
 
@@ -75,6 +78,9 @@ function buildSentence(q: any): { deBefore: string; hint: string; deAfter: strin
       hint,
       deAfter: ".",
       en: `${ctx.en} ${prepEn} ${hint}.`,
+      enBefore: `${ctx.en} ${prepEn} `,
+      enBlank: hint,
+      enAfter: ".",
     };
   }
 
@@ -87,12 +93,17 @@ function buildSentence(q: any): { deBefore: string; hint: string; deAfter: strin
     hint: artEn,
     deAfter: ` ${q.nounDe}${sfxDe}.`,
     en: `${ctx.en} ${prepEn}${artEn ? " " + artEn : ""} ${q.nounEn}${sfxEn}.`,
+    enBefore: artEn ? `${ctx.en} ${prepEn} ` : `${ctx.en} ${prepEn} ${q.nounEn}${sfxEn}.`,
+    enBlank: artEn,
+    enAfter: artEn ? ` ${q.nounEn}${sfxEn}.` : "",
   };
 }
 import { cn } from "@/lib/utils";
 import QRCode from "react-qr-code";
 import { avatarSrc } from "./avatars";
-import { sampleQuestions, PILL_LABEL, eliminationTiersData, computeElimCount } from "./scoring";
+import { sampleQuestions, sampleQWQuestions, sampleWFragenQuestions, PILL_LABEL, eliminationTiersData, computeElimCount } from "./scoring";
+import { TeacherQWDisplay } from "./TeacherQWDisplay";
+import { TeacherWFragenDisplay } from "./TeacherWFragenDisplay";
 import { Play, SkipForward, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -130,11 +141,13 @@ export function TeacherPanel() {
   const [responses, setResponses] = useState<any[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [selectedGame, setSelectedGame] = useState<"article" | "question-words" | "wfragen">("article");
+  const [wfragenLevel, setWfragenLevel] = useState<"easy" | "hard">("easy");
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [panelExpanded, setPanelExpanded] = useState(false);
   const [statsExpanded, setStatsExpanded] = useState(false);
   const [prevRankOrder, setPrevRankOrder] = useState<string[]>([]);
-  const [pillAvatars, setPillAvatars] = useState<{ key: string; x: number; y: number; avatarKey: string; delayMs: number }[]>([]);
+  const [pillAvatars, setPillAvatars] = useState<{ key: string; x: number; y: number; avatarKey: string; delayMs: number; floatDur: number; floatPhase: number }[]>([]);
   const creatingRef = useRef(false); // synchronous guard against double-submit
 
   const createFn     = useServerFn(createLiveSession);
@@ -182,8 +195,14 @@ export function TeacherPanel() {
     creatingRef.current = true;
     setCreating(true);
     try {
+      const gameMode = selectedGame === "question-words" ? "question-words"
+        : selectedGame === "wfragen" ? "wfragen"
+        : "prep-lock";
+      const questions = selectedGame === "question-words" ? sampleQWQuestions()
+        : selectedGame === "wfragen" ? sampleWFragenQuestions(wfragenLevel)
+        : sampleQuestions(20);
       const row = await createFn({
-        data: { code: makeCode(), gameMode: "prep-lock", questions: sampleQuestions(20), timerMaxSeconds: 30 },
+        data: { code: makeCode(), gameMode, questions, timerMaxSeconds: 30 },
       });
       setSession(row as Session);
       try {
@@ -249,7 +268,7 @@ export function TeacherPanel() {
     : Date.now();
   const timerMaxMs = (session?.timer_max_seconds || 30) * 1000;
   const elapsed = Math.max(0, now - startedAt);
-  const activeTiers = activeQ ? eliminationTiersData(activeQ) : null;
+  const activeTiers = activeQ && session?.game_mode !== "question-words" && session?.game_mode !== "wfragen" ? eliminationTiersData(activeQ) : null;
   const cappedElimCount = (session?.phase === "active" && activeTiers)
     ? computeElimCount(elapsed, timerMaxMs, activeTiers.tier0Count, activeTiers.tier1Count, activeTiers.tier2Count, activeTiers.tier3Count, activeTiers.tier4Count)
     : 0;
@@ -272,7 +291,7 @@ export function TeacherPanel() {
     const clear = () =>
       document.querySelectorAll("[data-quiz-correct]").forEach((el) => el.removeAttribute("data-quiz-correct"));
     clear();
-    if (!showBreakdown || !activeQ) return clear;
+    if (!showBreakdown || !activeQ || session?.game_mode === "question-words" || session?.game_mode === "wfragen") return clear;
     document.querySelectorAll(`[data-cell-id="${activeQ.correctPillId}"]`).forEach((el) =>
       (el as HTMLElement).setAttribute("data-quiz-correct", "1"),
     );
@@ -350,7 +369,7 @@ export function TeacherPanel() {
         const cx = rect.left + rect.width / 2 - totalW / 2 - 6;
         const cy = rect.bottom - 6;
         keys.forEach((avatarKey, i) => {
-          avatars.push({ key: `${pillId}-${i}`, x: cx + i * spacing, y: cy, avatarKey, delayMs: gi * 55 });
+          avatars.push({ key: `${pillId}-${i}`, x: cx + i * spacing, y: cy, avatarKey, delayMs: gi * 55, floatDur: 1.8 + Math.random() * 1.6, floatPhase: Math.random() * 2400 });
           gi++;
         });
       }
@@ -363,7 +382,16 @@ export function TeacherPanel() {
     ? activeQ.sentence
       ? (() => {
           const [deBefore, deAfter] = activeQ.sentence.split("_____");
-          return { deBefore: deBefore ?? "", hint: articleEn(activeQ.nounArticle ?? "") || (activeQ as any).targetEn || "?", deAfter: deAfter ?? "", en: activeQ.sentenceEn ?? "" };
+          const _artEn = articleEn(activeQ.nounArticle ?? "");
+          const _nounEn: string = activeQ.nounEn ?? "";
+          const _sentEn: string = activeQ.sentenceEn ?? "";
+          let _enBefore = _sentEn, _enBlank = "", _enAfter = "";
+          if (_artEn && _nounEn) {
+            const _target = ` ${_artEn} ${_nounEn}`;
+            const _idx = _sentEn.toLowerCase().indexOf(_target.toLowerCase());
+            if (_idx !== -1) { _enBefore = _sentEn.slice(0, _idx + 1); _enBlank = _artEn; _enAfter = _sentEn.slice(_idx + 1 + _artEn.length); }
+          }
+          return { deBefore: deBefore ?? "", hint: _artEn || (activeQ as any).targetEn || "?", deAfter: deAfter ?? "", en: _sentEn, enBefore: _enBefore, enBlank: _enBlank, enAfter: _enAfter };
         })()
       : buildSentence(activeQ)
     : null;
@@ -394,7 +422,28 @@ export function TeacherPanel() {
             transition: "flex-grow 0.5s ease-in-out, opacity 0.35s ease-in-out, max-height 0.5s ease-in-out",
           }}
         >
-          {activeQ && sentence && (
+          {activeQ && (
+            session?.game_mode === "question-words"
+              ? <TeacherQWDisplay
+                  q={activeQ}
+                  questionIndex={session.current_question_index}
+                  totalQuestions={session.questions.length}
+                  responses={responses}
+                  showBreakdown={showBreakdown}
+                  answeredThisQ={answeredThisQ}
+                  participantCount={participants.size}
+                />
+              : session?.game_mode === "wfragen"
+              ? <TeacherWFragenDisplay
+                  q={activeQ}
+                  questionIndex={session.current_question_index}
+                  totalQuestions={session.questions.length}
+                  responses={responses}
+                  showBreakdown={showBreakdown}
+                  answeredThisQ={answeredThisQ}
+                  participantCount={participants.size}
+                />
+              : sentence && (
             <>
               <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold bg-white/70 backdrop-blur-sm rounded-full px-3 py-1">
                 Q{session.current_question_index + 1} / {session.questions.length}
@@ -414,9 +463,12 @@ export function TeacherPanel() {
                 {sentence.deAfter && <span>{sentence.deAfter.trimStart()}</span>}
               </div>
               <div className="text-2xl text-poster-ink/60 font-medium drop-shadow-sm italic">
-                {sentence.en}
+                {sentence.enBefore}
+                {sentence.enBlank && <span style={{ borderBottom: "2px solid currentColor", paddingBottom: 1 }}>{sentence.enBlank}</span>}
+                {sentence.enAfter}
               </div>
             </>
+              )
           )}
         </div>
 
@@ -440,39 +492,54 @@ export function TeacherPanel() {
           {!collapsed && (
             <div className={cn("p-4 space-y-3 overflow-y-auto", panelExpanded ? "flex-1" : "max-h-[40vh]")}>
               {!session ? (
-                <button
-                  onClick={createSession}
-                  disabled={creating}
-                  className="w-full py-3 rounded-full bg-poster-teal text-white font-bold text-base hover:bg-poster-teal/90 disabled:opacity-50 transition-colors"
-                >
-                  {creating ? "Creating…" : "Start Session"}
-                </button>
+                <>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-widest text-poster-ink/40 font-semibold mb-2">Game</div>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {(["article", "question-words", "wfragen"] as const).map((g) => (
+                        <button
+                          key={g}
+                          onClick={() => setSelectedGame(g)}
+                          className={cn(
+                            "flex-1 py-2 rounded-full text-xs font-semibold transition-colors whitespace-nowrap",
+                            selectedGame === g
+                              ? "bg-poster-teal text-white"
+                              : "bg-white/60 text-poster-ink/60 border border-poster-ink/15 hover:bg-white"
+                          )}
+                        >
+                          {g === "article" ? "Article Quiz" : g === "question-words" ? "Question Words" : "W-Fragen"}
+                        </button>
+                      ))}
+                    </div>
+                    {selectedGame === "wfragen" && (
+                      <div className="mt-2 flex gap-1.5">
+                        {(["easy", "hard"] as const).map((lv) => (
+                          <button
+                            key={lv}
+                            onClick={() => setWfragenLevel(lv)}
+                            className={cn(
+                              "flex-1 py-1.5 rounded-full text-xs font-semibold transition-colors capitalize",
+                              wfragenLevel === lv
+                                ? "bg-poster-yellow text-white"
+                                : "bg-white/60 text-poster-ink/50 border border-poster-ink/15 hover:bg-white"
+                            )}
+                          >
+                            {lv}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={createSession}
+                    disabled={creating}
+                    className="w-full py-3 rounded-full bg-poster-teal text-white font-bold text-base hover:bg-poster-teal/90 disabled:opacity-50 transition-colors"
+                  >
+                    {creating ? "Creating…" : "Start Session"}
+                  </button>
+                </>
               ) : showBreakdown && session.phase === "active" ? (
                 <>
-                  {/* Per-student answers */}
-                  <div className="space-y-1.5">
-                    <div className="text-[10px] uppercase tracking-widest text-poster-ink/40 font-semibold">Answers</div>
-                    {[...participants.entries()].map(([id, p]) => {
-                      const r = responses.find((r) => r.student_id === id && r.question_index === session.current_question_index);
-                      return (
-                        <div key={id} className="flex items-center gap-2 rounded-full px-3 py-1.5 bg-white/60">
-                          <img src={avatarSrc(p.avatar)} alt="" className="w-6 h-6" draggable={false} />
-                          <span className="flex-1 text-sm font-semibold text-poster-ink truncate">{p.name}</span>
-                          {r ? (
-                            <>
-                              <span className="text-xs font-bold text-poster-ink/40">{PILL_LABEL[r.answer] ?? r.answer}</span>
-                              <span className={cn("text-sm font-bold w-5 text-center", r.is_correct ? "text-poster-teal" : "text-poster-red")}>
-                                {r.is_correct ? "✓" : "✗"}
-                              </span>
-                              {r.points > 0 && <span className="text-xs font-bold text-poster-yellow tabular-nums">+{r.points}</span>}
-                            </>
-                          ) : (
-                            <span className="text-xs text-poster-ink/25 italic">no answer</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
                   {/* Rankings */}
                   {sessionLeaderboard.length > 0 && (
                     <div className="space-y-1">
@@ -485,7 +552,7 @@ export function TeacherPanel() {
                           <div
                             key={t.id}
                             className={cn("flex items-center gap-2 rounded-full px-3 py-1.5", i === 0 ? "bg-poster-yellow" : "bg-white/60")}
-                            style={statsExpanded && slideFromPx !== 0 ? { '--rank-slide-from': `${slideFromPx}px`, animation: 'rank-slide 0.55s ease-out both' } as React.CSSProperties : undefined}
+                            style={statsExpanded && slideFromPx !== 0 ? { '--rank-slide-from': `${slideFromPx}px`, animation: 'rank-slide 1.1s ease-out both' } as React.CSSProperties : undefined}
                           >
                             <span className={cn("text-xs font-bold w-4 text-center", i === 0 ? "text-white" : "text-poster-ink/30")}>{i + 1}</span>
                             <img src={avatarSrc(t.avatar)} alt="" className="w-5 h-5" draggable={false} />
@@ -581,11 +648,11 @@ export function TeacherPanel() {
           )}
         </div>
       </div>
-      {pillAvatars.map(({ key, x, y, avatarKey, delayMs }) => (
+      {pillAvatars.map(({ key, x, y, avatarKey, delayMs, floatDur, floatPhase }) => (
         <div
           key={key}
           className="fixed z-[300] pointer-events-none avatar-scatter"
-          style={{ left: x, top: y, animationDelay: `${delayMs}ms` }}
+          style={{ left: x, top: y, '--scatter-delay': `${delayMs}ms`, '--float-dur': `${floatDur}s`, '--float-phase': `${floatPhase}ms` } as React.CSSProperties}
         >
           <img src={avatarSrc(avatarKey)} alt="" className="w-3 h-3 rounded-full shadow ring-1 ring-white" draggable={false} />
         </div>

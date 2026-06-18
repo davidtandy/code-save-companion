@@ -3,6 +3,8 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { LiveQuizProvider, useLiveQuiz } from "./LiveQuizProvider";
 import { LivePillBoard } from "./LivePillBoard";
+import { StudentQWQuiz } from "./StudentQWQuiz";
+import { StudentWFragenQuiz } from "./StudentWFragenQuiz";
 import { avatarSrc } from "./avatars";
 import type { StudentIdentity } from "./StudentLobby";
 import { useServerFn } from "@tanstack/react-start";
@@ -79,6 +81,30 @@ function StudentQuizInner({ identity, onLeave }: Props) {
   const idx = session.current_question_index;
   const q = session.questions?.[idx];
   if (!q) return <Splash>Waiting for next question…</Splash>;
+
+  if (session.game_mode === "question-words") {
+    return (
+      <StudentQWQuiz
+        identity={identity}
+        session={session}
+        myResponses={myResponses}
+        submitting={submitting}
+        onAnswer={handleAnswer}
+      />
+    );
+  }
+
+  if (session.game_mode === "wfragen") {
+    return (
+      <StudentWFragenQuiz
+        identity={identity}
+        session={session}
+        myResponses={myResponses}
+        submitting={submitting}
+        onAnswer={handleAnswer}
+      />
+    );
+  }
 
   const startedAt = session.question_started_at
     ? new Date(session.question_started_at).getTime()
