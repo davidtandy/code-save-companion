@@ -1,4 +1,5 @@
 // @ts-nocheck
+
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { PILL_LABEL } from "./scoring";
