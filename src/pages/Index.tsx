@@ -97,6 +97,14 @@ const GAME_OPTIONS: { value: GameMode; label: string; icon: React.ElementType; d
   { value: "prep-trainer",      label: "Prep Trainer",      icon: Navigation,     description: "Find where each preposition lives" },
 ];
 
+function LivePhaseReporter({ onPhase }: { onPhase: (phase: string | null) => void }) {
+  const { session, loading } = useLiveQuiz();
+  useEffect(() => {
+    onPhase(loading || !session ? null : session.phase);
+  }, [loading, session, onPhase]);
+  return null;
+}
+
 const Index = () => {
   const [liveMode] = useState(() => getLiveMode());
   const [studentIdentity, setStudentIdentity] = useState<StudentIdentity | null>(() => {
