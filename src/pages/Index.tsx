@@ -1186,7 +1186,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
             />
           </div>
         </div>
-      )}
+      ))}
 
       {!isPortraitMobile && hoverTooltip && (() => {
         const info = getHoverInfo(hoverTooltip.id);
