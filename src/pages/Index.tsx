@@ -118,18 +118,50 @@ const Index = () => {
     return null;
   });
 
+  function StudentShell({ identity, onLeave }: { identity: StudentIdentity; onLeave: () => void }) {
+    const [phase, setPhase] = useState<string | null>(null);
+    return (
+      <LiveQuizProvider sessionId={identity.session_id} studentId={identity.student_id}>
+        <LivePhaseReporter onPhase={setPhase} />
+        {phase === "active" ? (
+          <Cheatsheet
+            liveTeacher={false}
+            liveTeacherPreview={false}
+            liveStudent={identity}
+            onLiveLeave={onLeave}
+          />
+        ) : (
+          <LiveStudentOverlay
+            identity={identity}
+            onLeave={onLeave}
+            onSetSubmit={() => {}}
+            quizFillMode={false}
+          />
+        )}
+      </LiveQuizProvider>
+    );
+  }
+
   if (liveMode === "student" && !studentIdentity) {
     return <StudentLobby onJoined={setStudentIdentity} />;
+  }
+
+  if (liveMode === "student" && studentIdentity) {
+    return (
+      <StudentShell
+        identity={studentIdentity}
+        onLeave={() => {
+          try { localStorage.removeItem("livequiz_student"); } catch {}
+          setStudentIdentity(null);
+        }}
+      />
+    );
   }
 
   return <Cheatsheet
     liveTeacher={liveMode === "teacher"}
     liveTeacherPreview={liveMode === "preview"}
-    liveStudent={liveMode === "student" ? studentIdentity : null}
-    onLiveLeave={liveMode === "student" ? () => {
-      try { localStorage.removeItem("livequiz_student"); } catch {}
-      setStudentIdentity(null);
-    } : undefined}
+    liveStudent={null}
   />;
 
 };
