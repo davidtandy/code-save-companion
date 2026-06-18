@@ -39,7 +39,7 @@ import { StudentLobby, type StudentIdentity } from "@/components/livequiz/Studen
 import { TeacherPanel } from "@/components/livequiz/TeacherPanel";
 import { TeacherPreviewPanel } from "@/components/livequiz/TeacherPreviewPanel";
 import { LiveStudentOverlay } from "@/components/livequiz/LiveStudentOverlay";
-import { LiveQuizProvider } from "@/components/livequiz/LiveQuizProvider";
+import { LiveQuizProvider, useLiveQuiz } from "@/components/livequiz/LiveQuizProvider";
 import { RotatePrompt } from "@/components/RotatePrompt";
 
 function getLiveMode(): "student" | "teacher" | "preview" | null {
