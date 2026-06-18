@@ -166,6 +166,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
   const isPortraitMobile = usePortraitMobile();
   const isLandscapeMobile = useIsLandscapeMobile();
   const quizFillMode = !!liveStudent && isLandscapeMobile;
+  const [livePhase, setLivePhase] = useState<string | null>(null);
   const [infoLayout, setInfoLayout] = useState(1);
   /** True once the zoom-in animation completes; gates InfoSheet visibility on mobile. */
   const [mobileInfoVisible, setMobileInfoVisible] = useState(false);
