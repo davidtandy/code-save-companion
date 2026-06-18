@@ -39,7 +39,7 @@ import { StudentLobby, type StudentIdentity } from "@/components/livequiz/Studen
 import { TeacherPanel } from "@/components/livequiz/TeacherPanel";
 import { TeacherPreviewPanel } from "@/components/livequiz/TeacherPreviewPanel";
 import { LiveStudentOverlay } from "@/components/livequiz/LiveStudentOverlay";
-import { LiveQuizProvider } from "@/components/livequiz/LiveQuizProvider";
+import { LiveQuizProvider, useLiveQuiz } from "@/components/livequiz/LiveQuizProvider";
 import { RotatePrompt } from "@/components/RotatePrompt";
 
 function getLiveMode(): "student" | "teacher" | "preview" | null {
@@ -96,6 +96,14 @@ const GAME_OPTIONS: { value: GameMode; label: string; icon: React.ElementType; d
   { value: "question-words",    label: "Question Words",    icon: Brain,          description: "Master WER, WEN, WEM and more" },
   { value: "prep-trainer",      label: "Prep Trainer",      icon: Navigation,     description: "Find where each preposition lives" },
 ];
+
+function LivePhaseReporter({ onPhase }: { onPhase: (phase: string | null) => void }) {
+  const { session, loading } = useLiveQuiz();
+  useEffect(() => {
+    onPhase(loading || !session ? null : session.phase);
+  }, [loading, session, onPhase]);
+  return null;
+}
 
 const Index = () => {
   const [liveMode] = useState(() => getLiveMode());
@@ -158,6 +166,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
   const isPortraitMobile = usePortraitMobile();
   const isLandscapeMobile = useIsLandscapeMobile();
   const quizFillMode = !!liveStudent && isLandscapeMobile;
+  const [livePhase, setLivePhase] = useState<string | null>(null);
   const [infoLayout, setInfoLayout] = useState(1);
   /** True once the zoom-in animation completes; gates InfoSheet visibility on mobile. */
   const [mobileInfoVisible, setMobileInfoVisible] = useState(false);
@@ -914,6 +923,8 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
     return { caseRect, groupRect, wordRect, subRect };
   })();
 
+  const hidePoster = isPortraitMobile && liveStudent && (!livePhase || livePhase === "lobby" || livePhase === "results" || livePhase === "ended");
+
   const mainContent = (
     <>
     {liveTeacher && <TeacherPanel />}
@@ -926,6 +937,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
         quizFillMode={quizFillMode}
       />
     )}
+    {liveStudent && <LivePhaseReporter onPhase={setLivePhase} />}
     {!liveStudent && !liveTeacher && !liveTeacherPreview && showWelcome && (
       <WelcomeModal onDismiss={() => dismissWelcome(false)} onTour={() => dismissWelcome(true)} isMobile={isPortraitMobile} />
     )}
@@ -1064,7 +1076,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
       </header>
 
 
-      {isPortraitMobile ? (
+      {!hidePoster && (isPortraitMobile ? (
         <MobilePosterSlider
           posterRef={posterRef}
           activeCase={activeCase}
@@ -1174,7 +1186,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
             />
           </div>
         </div>
-      )}
+      ))}
 
       {!isPortraitMobile && hoverTooltip && (() => {
         const info = getHoverInfo(hoverTooltip.id);
