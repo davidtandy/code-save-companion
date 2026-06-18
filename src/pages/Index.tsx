@@ -937,6 +937,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
         quizFillMode={quizFillMode}
       />
     )}
+    {liveStudent && <LivePhaseReporter onPhase={setLivePhase} />}
     {!liveStudent && !liveTeacher && !liveTeacherPreview && showWelcome && (
       <WelcomeModal onDismiss={() => dismissWelcome(false)} onTour={() => dismissWelcome(true)} isMobile={isPortraitMobile} />
     )}
