@@ -2,6 +2,7 @@ import { createFileRoute, ClientOnly } from "@tanstack/react-router";
 import Index from "@/pages/Index";
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>) => search,
   head: () => ({
     meta: [
       { title: "Genau — Interactive German Grammar Cheatsheet" },
