@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { avatarSrc } from "./avatars";
 import type { StudentIdentity } from "./StudentLobby";
@@ -23,17 +23,7 @@ type Props = {
 
 export function StudentWFragenQuiz({ identity, session, myResponses, submitting, onAnswer }: Props) {
   const [localAnswer, setLocalAnswer] = useState<string | null>(null);
-  const [hintVisible, setHintVisible] = useState(false);
   const zones = loadZones();
-
-  const isHardArticle = q?.level === "hard" && q?.step === "article";
-
-  useEffect(() => {
-    if (!isHardArticle) { setHintVisible(false); return; }
-    setHintVisible(false);
-    const t = setTimeout(() => setHintVisible(true), 15_000);
-    return () => clearTimeout(t);
-  }, [session.current_question_index, isHardArticle]);
 
   const idx = session.current_question_index;
   const q = session.questions?.[idx] as WFragenQuestion | undefined;
@@ -114,10 +104,7 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
               Tap the question word below
             </span>
           ) : (
-            <span
-              className="text-[11px] uppercase tracking-widest text-poster-teal/70 transition-opacity duration-1000"
-              style={{ opacity: isHardArticle ? (hintVisible ? 1 : 0) : 1 }}
-            >
+            <span className="text-[11px] uppercase tracking-widest text-poster-teal/70">
               <span className="font-bold">{q.correctWWord}?</span> — {W_EN[q.correctWWord]} · now tap the article
             </span>
           )}

@@ -272,10 +272,9 @@ export function sampleWFragenQuestions(level: "easy" | "hard"): WFragenQuestion[
   }
   const result: WFragenQuestion[] = [];
   sentences.forEach((s, i) => {
-    if (level === "easy") {
-      result.push({ kind: "wfragen", level: "easy", step: "wword", sentenceIndex: i, ...s });
-    } else {
-      result.push({ kind: "wfragen", level: "hard", step: "article", sentenceIndex: i, ...s });
+    result.push({ kind: "wfragen", step: "wword", sentenceIndex: i, ...s });
+    if (level === "hard") {
+      result.push({ kind: "wfragen", step: "article", sentenceIndex: i, ...s });
     }
   });
   return result;

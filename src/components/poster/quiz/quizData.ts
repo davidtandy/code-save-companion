@@ -45,7 +45,6 @@ export type QWQuestion = {
 
 export type WFragenQuestion = {
   kind: "wfragen";
-  level: "easy" | "hard";
   step: "wword" | "article";
   pre: string;
   boxedPre?: string;

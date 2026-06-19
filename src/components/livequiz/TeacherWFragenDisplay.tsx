@@ -1,7 +1,5 @@
 // @ts-nocheck
-
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
 import { PILL_LABEL } from "./scoring";
 import type { WFragenQuestion } from "@/components/poster/quiz/quizData";
 
@@ -23,16 +21,6 @@ export function TeacherWFragenDisplay({
   q, questionIndex, totalQuestions, responses, showBreakdown, answeredThisQ, participantCount,
 }: Props) {
   const isWword = q.step === "wword";
-  const isHardArticle = q.level === "hard" && !isWword;
-  const [hintVisible, setHintVisible] = useState(false);
-
-  useEffect(() => {
-    if (!isHardArticle) { setHintVisible(false); return; }
-    setHintVisible(false);
-    const t = setTimeout(() => setHintVisible(true), 15_000);
-    return () => clearTimeout(t);
-  }, [questionIndex, isHardArticle]);
-
   const currentResponses = responses.filter((r) => r.question_index === questionIndex);
 
   const options = isWword
@@ -79,40 +67,28 @@ export function TeacherWFragenDisplay({
 
       {/* W-word indicator (on article step) */}
       {!isWword && (
-        <div
-          className="text-sm text-poster-ink/50 font-medium transition-opacity duration-1000"
-          style={{ opacity: isHardArticle ? (hintVisible ? 1 : 0) : 1 }}
-        >
+        <div className="text-sm text-poster-ink/50 font-medium">
           <span className="font-bold text-poster-teal">{q.correctWWord}?</span>
           {" "}— {W_EN[q.correctWWord]}
         </div>
       )}
 
-      {/* Answer distribution — hidden for hard mode until breakdown */}
-      {(q.level !== "hard" || showBreakdown) && <div className="w-full max-w-[170px] flex gap-1.5">
+      {/* Answer distribution */}
+      <div className="w-full max-w-[300px] space-y-1">
         {isWword
           ? options.map((word) => {
               const count = currentResponses.filter((r) => r.answer?.toUpperCase() === word).length;
               const barPct = Math.round((count / maxCount) * 100);
               const revealed = showBreakdown && word === q.correctWWord;
-              const fillColor = revealed ? "rgba(0,180,140,0.45)" : "rgba(0,0,0,0.10)";
-              const trackColor = revealed ? "rgba(0,180,140,0.08)" : "rgba(0,0,0,0.04)";
-              const textColor = revealed ? "#00b09b" : "rgba(10,10,20,0.50)";
               return (
-                <div key={word} className="flex-1 flex flex-col items-center gap-1.5">
-                  <div className="relative w-full rounded-lg overflow-hidden" style={{ height: 60, background: trackColor }}>
-                    <div
-                      className="absolute bottom-0 inset-x-0 rounded-t-lg transition-all duration-700 flex items-start justify-center pt-1"
-                      style={{ height: `${barPct}%`, background: fillColor, minHeight: count > 0 ? 20 : 0 }}
-                    >
-                      {count > 0 && (
-                        <span className="text-[11px] font-bold leading-none" style={{ color: textColor }}>{count}</span>
-                      )}
-                    </div>
+                <div key={word} className="relative rounded-lg overflow-hidden text-xs font-semibold px-3 py-1.5 text-left"
+                  style={{ background: revealed ? "rgba(0,180,140,0.08)" : "rgba(0,0,0,0.04)", color: revealed ? "#00b09b" : "rgba(10,10,20,0.55)" }}>
+                  <div className="absolute inset-y-0 left-0 transition-all duration-700"
+                    style={{ width: `${barPct}%`, background: revealed ? "rgba(0,180,140,0.22)" : "rgba(0,0,0,0.07)" }} />
+                  <div className="relative flex justify-between gap-3">
+                    <span>{word}? <span className="opacity-50 font-normal">({W_EN[word]})</span></span>
+                    <span>{count}</span>
                   </div>
-                  <span className="text-[10px] font-semibold text-center leading-tight" style={{ color: textColor }}>
-                    {word}?
-                  </span>
                 </div>
               );
             })
@@ -120,29 +96,20 @@ export function TeacherWFragenDisplay({
               const count = currentResponses.filter((r) => r.answer?.toUpperCase() === id.toUpperCase()).length;
               const barPct = Math.round((count / maxCount) * 100);
               const revealed = showBreakdown && id === q.correctPillId;
-              const fillColor = revealed ? "rgba(0,180,140,0.45)" : "rgba(0,0,0,0.10)";
-              const trackColor = revealed ? "rgba(0,180,140,0.08)" : "rgba(0,0,0,0.04)";
-              const textColor = revealed ? "#00b09b" : "rgba(10,10,20,0.50)";
               return (
-                <div key={id} className="flex-1 flex flex-col items-center gap-1.5">
-                  <div className="relative w-full rounded-lg overflow-hidden" style={{ height: 60, background: trackColor }}>
-                    <div
-                      className="absolute bottom-0 inset-x-0 rounded-t-lg transition-all duration-700 flex items-start justify-center pt-1"
-                      style={{ height: `${barPct}%`, background: fillColor, minHeight: count > 0 ? 20 : 0 }}
-                    >
-                      {count > 0 && (
-                        <span className="text-[11px] font-bold leading-none" style={{ color: textColor }}>{count}</span>
-                      )}
-                    </div>
+                <div key={id} className="relative rounded-lg overflow-hidden text-xs font-semibold px-3 py-1.5 text-left"
+                  style={{ background: revealed ? "rgba(0,180,140,0.08)" : "rgba(0,0,0,0.04)", color: revealed ? "#00b09b" : "rgba(10,10,20,0.55)" }}>
+                  <div className="absolute inset-y-0 left-0 transition-all duration-700"
+                    style={{ width: `${barPct}%`, background: revealed ? "rgba(0,180,140,0.22)" : "rgba(0,0,0,0.07)" }} />
+                  <div className="relative flex justify-between gap-3">
+                    <span>{label}</span>
+                    <span>{count}</span>
                   </div>
-                  <span className="text-[10px] font-semibold text-center leading-tight" style={{ color: textColor }}>
-                    {label}
-                  </span>
                 </div>
               );
             })
         }
-      </div>}
+      </div>
     </>
   );
 }

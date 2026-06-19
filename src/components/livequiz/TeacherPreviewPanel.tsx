@@ -3,8 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import QRCode from "react-qr-code";
 import { avatarSrc } from "./avatars";
-import { sampleQuestions, sampleWFragenQuestions, PILL_LABEL, eliminationTiersData, computeElimCount } from "./scoring";
-import { TeacherWFragenDisplay } from "./TeacherWFragenDisplay";
+import { sampleQuestions, PILL_LABEL, eliminationTiersData, computeElimCount } from "./scoring";
 import { Play, SkipForward, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 
 const FAKE_STUDENTS = [
@@ -38,31 +37,19 @@ function buildPreviewSentence(q: any): { deBefore: string; hint: string; deAfter
   return { deBefore: `… ${q.prep?.token ?? ""} `, hint: "?", deAfter: ` ${q.nounDe ?? "…"}.`, en: "", enBefore: "", enBlank: "", enAfter: "" };
 }
 
-const WRONG_WWORD = ["WER", "WEN", "WEM", "WO", "WOHIN"];
-
 function makeFakeResponses(q: any, startedAt: number, questionIndex: number) {
-  const isWfragen = q.kind === "wfragen";
   return FAKE_STUDENTS.map((s, i) => {
+    // Rotate who gets it wrong each round so rankings shift
     const isCorrect = i !== (questionIndex % FAKE_STUDENTS.length);
     const elapsed = 3000 + i * 2000 + (questionIndex % 3) * 500;
     const ratio = Math.max(0, 1 - elapsed / TIMER_MAX_MS);
     const points = isCorrect ? Math.round(500 + 500 * ratio) : 0;
-    let answer: string;
-    if (isWfragen) {
-      if (q.step === "wword") {
-        answer = isCorrect ? q.correctWWord : WRONG_WWORD.find((w) => w !== q.correctWWord) ?? "WER";
-      } else {
-        answer = isCorrect ? q.correctPillId : "nom-der";
-      }
-    } else {
-      answer = isCorrect ? q.correctPillId : "nom-der";
-    }
     return {
       student_id: s.id,
       student_name: s.name,
       student_avatar: s.avatar,
       question_index: questionIndex,
-      answer,
+      answer: isCorrect ? q.correctPillId : "nom-der",
       is_correct: isCorrect,
       response_ms: elapsed,
       points,
@@ -72,8 +59,6 @@ function makeFakeResponses(q: any, startedAt: number, questionIndex: number) {
 
 export function TeacherPreviewPanel() {
   const [phase, setPhase] = useState<"idle" | "lobby" | "active" | "results">("idle");
-  const [gameMode, setGameMode] = useState<"article" | "wfragen">("article");
-  const [wfragenLevel, setWfragenLevel] = useState<"easy" | "hard">("easy");
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [questionStartedAt, setQuestionStartedAt] = useState<number>(Date.now());
@@ -97,7 +82,7 @@ export function TeacherPreviewPanel() {
   const timeRatio = Math.max(0, Math.min(1, 1 - elapsed / TIMER_MAX_MS));
   const timerExpired = timeRatio <= 0;
 
-  const tiers = (activeQ && activeQ.kind !== "wfragen") ? eliminationTiersData(activeQ) : null;
+  const tiers = activeQ ? eliminationTiersData(activeQ) : null;
   const cappedElimCount = (phase === "active" && tiers)
     ? computeElimCount(elapsed, TIMER_MAX_MS, tiers.tier0Count, tiers.tier1Count, tiers.tier2Count, tiers.tier3Count, tiers.tier4Count)
     : 0;
@@ -119,7 +104,7 @@ export function TeacherPreviewPanel() {
     const clear = () =>
       document.querySelectorAll("[data-quiz-correct]").forEach((el) => el.removeAttribute("data-quiz-correct"));
     clear();
-    if (!showBreakdown || !activeQ || activeQ.kind === "wfragen") return clear;
+    if (!showBreakdown || !activeQ) return clear;
     document.querySelectorAll(`[data-cell-id="${activeQ.correctPillId}"]`).forEach((el) =>
       (el as HTMLElement).setAttribute("data-quiz-correct", "1"),
     );
@@ -179,7 +164,7 @@ export function TeacherPreviewPanel() {
   }, [showBreakdown, currentIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function startQuiz() {
-    const qs = gameMode === "wfragen" ? sampleWFragenQuestions(wfragenLevel) : sampleQuestions(20);
+    const qs = sampleQuestions(20);
     const now = Date.now();
     setQuestions(qs);
     setCurrentIdx(0);
@@ -255,17 +240,7 @@ export function TeacherPreviewPanel() {
             transition: "flex-grow 0.5s ease-in-out, opacity 0.35s ease-in-out, max-height 0.5s ease-in-out",
           }}
         >
-          {activeQ && activeQ.kind === "wfragen" ? (
-            <TeacherWFragenDisplay
-              q={activeQ}
-              questionIndex={currentIdx}
-              totalQuestions={questions.length}
-              responses={responses}
-              showBreakdown={showBreakdown}
-              answeredThisQ={answeredThisQ}
-              participantCount={FAKE_STUDENTS.length}
-            />
-          ) : activeQ && sentence && (
+          {activeQ && sentence && (
             <>
               <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold bg-white/70 backdrop-blur-sm rounded-full px-3 py-1">
                 Q{currentIdx + 1} / {questions.length}
@@ -318,45 +293,6 @@ export function TeacherPreviewPanel() {
 
           {!collapsed && (
             <div className={cn("p-4 space-y-3 overflow-y-auto", panelExpanded ? "flex-1" : "max-h-[40vh]")}>
-              {(phase === "idle" || phase === "lobby") && (
-                <div className="space-y-2">
-                  <div className="text-[10px] uppercase tracking-widest text-poster-ink/40 font-semibold">Game</div>
-                  <div className="flex gap-2">
-                    {(["article", "wfragen"] as const).map((m) => (
-                      <button
-                        key={m}
-                        onClick={() => setGameMode(m)}
-                        className={cn(
-                          "flex-1 py-2 rounded-lg text-xs font-bold border transition-colors",
-                          gameMode === m
-                            ? "bg-poster-teal text-white border-poster-teal"
-                            : "border-poster-ink/20 text-poster-ink/50 hover:border-poster-teal/40",
-                        )}
-                      >
-                        {m === "article" ? "Article Quiz" : "W-Fragen"}
-                      </button>
-                    ))}
-                  </div>
-                  {gameMode === "wfragen" && (
-                    <div className="flex gap-2">
-                      {(["easy", "hard"] as const).map((l) => (
-                        <button
-                          key={l}
-                          onClick={() => setWfragenLevel(l)}
-                          className={cn(
-                            "flex-1 py-1.5 rounded-lg text-xs font-bold border capitalize transition-colors",
-                            wfragenLevel === l
-                              ? "bg-poster-yellow text-white border-poster-yellow"
-                              : "border-poster-ink/20 text-poster-ink/40 hover:border-poster-yellow/40",
-                          )}
-                        >
-                          {l}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
               {phase === "idle" ? (
                 <button
                   onClick={() => setPhase("lobby")}
