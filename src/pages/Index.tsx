@@ -21,7 +21,7 @@ import { QuizExplainerCard } from "@/components/poster/quiz/QuizExplainerCard";
 import { FlourishTuner } from "@/components/poster/quiz/FlourishTuner";
 import { LoadFlickerTuner } from "@/components/poster/quiz/LoadFlickerTuner";
 import { IntroTour, TOUR_STEPS } from "@/components/poster/IntroTour";
-import { usePortraitMobile, useIsLandscapeMobile } from "@/hooks/usePortraitMobile";
+import { usePortraitMobile } from "@/hooks/usePortraitMobile";
 import { MobilePosterSlider, MOBILE_SLIDER_BAR_H } from "@/components/poster/MobilePosterSlider";
 import { VerbCloudOverlay } from "@/components/poster/VerbCloudOverlay";
 import { WFragenGame, type WFragenHandle } from "@/components/poster/quiz/WFragenGame";
@@ -35,21 +35,7 @@ import { CaseHeaderPopup, type IconRect } from "@/components/poster/CaseHeaderPo
 import { WelcomeModal } from "@/components/WelcomeModal";
 import { CursorDemo } from "@/components/CursorDemo";
 import { IntroStage } from "@/components/IntroStage";
-import { StudentLobby, type StudentIdentity } from "@/components/livequiz/StudentLobby";
-import { TeacherPanel } from "@/components/livequiz/TeacherPanel";
-import { TeacherPreviewPanel } from "@/components/livequiz/TeacherPreviewPanel";
-import { LiveStudentOverlay } from "@/components/livequiz/LiveStudentOverlay";
-import { LiveQuizProvider, useLiveQuiz } from "@/components/livequiz/LiveQuizProvider";
 import { RotatePrompt } from "@/components/RotatePrompt";
-
-function getLiveMode(): "student" | "teacher" | "preview" | null {
-  if (typeof window === "undefined") return null;
-  const p = new URLSearchParams(window.location.search);
-  if (p.has("livequizteacher")) return "teacher";
-  if (p.has("livequizteacherpreview")) return "preview";
-  if (p.has("livequiz")) return "student";
-  return null;
-}
 
 type Level = 0 | 1 | 2 | 3 | 4;
 
@@ -97,81 +83,9 @@ const GAME_OPTIONS: { value: GameMode; label: string; icon: React.ElementType; d
   { value: "prep-trainer",      label: "Prep Trainer",      icon: Navigation,     description: "Find where each preposition lives" },
 ];
 
-function LivePhaseReporter({ onPhase }: { onPhase: (phase: string | null) => void }) {
-  const { session, loading } = useLiveQuiz();
-  useEffect(() => {
-    onPhase(loading || !session ? null : session.phase);
-  }, [loading, session, onPhase]);
-  return null;
-}
+const Index = () => <Cheatsheet />;
 
-const Index = () => {
-  const [liveMode] = useState(() => getLiveMode());
-  const [studentIdentity, setStudentIdentity] = useState<StudentIdentity | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = localStorage.getItem("livequiz_student");
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (parsed?.session_id && parsed?.student_id) return parsed;
-    } catch {}
-    return null;
-  });
-
-  function StudentShell({ identity, onLeave }: { identity: StudentIdentity; onLeave: () => void }) {
-    const [phase, setPhase] = useState<string | null>(null);
-    return (
-      <LiveQuizProvider sessionId={identity.session_id} studentId={identity.student_id}>
-        <LivePhaseReporter onPhase={setPhase} />
-        {phase === "active" ? (
-          <Cheatsheet
-            liveTeacher={false}
-            liveTeacherPreview={false}
-            liveStudent={identity}
-            onLiveLeave={onLeave}
-          />
-        ) : (
-          <LiveStudentOverlay
-            identity={identity}
-            onLeave={onLeave}
-            onSetSubmit={() => {}}
-            quizFillMode={false}
-          />
-        )}
-      </LiveQuizProvider>
-    );
-  }
-
-  if (liveMode === "student" && !studentIdentity) {
-    return <StudentLobby onJoined={setStudentIdentity} />;
-  }
-
-  if (liveMode === "student" && studentIdentity) {
-    return (
-      <StudentShell
-        identity={studentIdentity}
-        onLeave={() => {
-          try { localStorage.removeItem("livequiz_student"); } catch {}
-          setStudentIdentity(null);
-        }}
-      />
-    );
-  }
-
-  return <Cheatsheet
-    liveTeacher={liveMode === "teacher"}
-    liveTeacherPreview={liveMode === "preview"}
-    liveStudent={null}
-  />;
-
-};
-
-const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave }: {
-  liveTeacher: boolean;
-  liveTeacherPreview?: boolean;
-  liveStudent?: StudentIdentity | null;
-  onLiveLeave?: () => void;
-}) => {
+const Cheatsheet = () => {
   const [genderOn, setGenderOn] = useState(false);
   const [caseColorOn, setCaseColorOn] = useState(true);
   const [caseColorMode, setCaseColorMode] = useState<CaseColorMode>("tokens");
@@ -196,9 +110,6 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
   const [tourStep, setTourStep] = useState(0);
   /** Portrait mobile slider state. */
   const isPortraitMobile = usePortraitMobile();
-  const isLandscapeMobile = useIsLandscapeMobile();
-  const quizFillMode = !!liveStudent && isLandscapeMobile;
-  const [livePhase, setLivePhase] = useState<string | null>(null);
   const [infoLayout, setInfoLayout] = useState(1);
   /** True once the zoom-in animation completes; gates InfoSheet visibility on mobile. */
   const [mobileInfoVisible, setMobileInfoVisible] = useState(false);
@@ -233,13 +144,6 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
     else if (mode === "question-words") { if (quiz.active) quiz.exit(); }
   }
 
-  // Mutual exclusion: reset solo games when live quiz is active
-  useEffect(() => {
-    if (liveTeacher || liveTeacherPreview || !!liveStudent) {
-      setGameMode("explore");
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const [casePopup, setCasePopup] = useState<{ caseKey: CaseKey; iconRect: IconRect } | null>(null);
   const CASE_ICONS: Record<CaseKey, string> = { akk: bicycleSvg, nom: chefHatSvg, dat: envelopeSvg };
   type Rect = { left: number; top: number; width: number; height: number };
@@ -257,7 +161,6 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
 
   const posterRef = useRef<PosterHandle>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const liveQuizSubmit = useRef<((pillId: string) => void) | null>(null);
 
   /** Flourish state: bumped each time we want a re-cascade. */
   const [flourishEpoch, setFlourishEpoch] = useState(0);
@@ -399,8 +302,6 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
   };
 
   const handleTapWord = (id: string, _e?: React.MouseEvent) => {
-    // In live quiz student mode, pill taps are for answering only — no popups.
-    if (liveStudent) return;
     const root = id.includes("::") ? id.split("::")[0] : id;
     const isEin = einIds.has(root);
     const isPoss = root.startsWith("pos-");
@@ -521,10 +422,6 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
 
   /** Quiz-aware word tap — shared by landscape Poster and portrait carousel. */
   const handlePosterTapWord = (id: string) => {
-    if (liveQuizSubmit.current) {
-      liveQuizSubmit.current(id);
-      return;
-    }
     if (gameMode === "question-words") {
       wFragenRef.current?.onPillTap(id);
       return;
@@ -770,19 +667,13 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
     const fit = () => {
       const stage = stageRef.current?.getBoundingClientRect();
       if (!stage) return;
-      const margin = quizFillMode ? 4 : 16;
-      const fitW = quizFillMode ? POSTER_W - 56 : POSTER_W;
-      const fitH = POSTER_H;
-      // quizFill: width-only — top/bottom clip freely, pills fill the screen
-      const s = quizFillMode
-        ? Math.min(1, (stage.width - margin * 2) / fitW)
-        : Math.min(1, (stage.width - margin * 2) / fitW, (stage.height - margin * 2) / fitH);
+      const s = Math.min(1, (stage.width - 32) / POSTER_W, (stage.height - 32) / POSTER_H);
       setFitScale(s);
     };
     fit();
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
-  }, [quizFillMode]);
+  }, []);
 
   /** Always-on pan offset (px, in stage coords). */
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -838,13 +729,6 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
       panState.current.active = false;
       if (panState.current.moved) {
         didPanRef.current = true;
-      } else if (liveQuizSubmit.current) {
-        // Fire live-quiz answer on pointerUp (before synthetic click) for zero perceived delay
-        const el = (e.target as HTMLElement).closest("[data-cell-id]") as HTMLElement | null;
-        if (el?.dataset.cellId) {
-          liveQuizSubmit.current(el.dataset.cellId);
-          didPanRef.current = true; // suppress the subsequent click event
-        }
       }
     }
   };
@@ -955,28 +839,15 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
     return { caseRect, groupRect, wordRect, subRect };
   })();
 
-  const hidePoster = isPortraitMobile && liveStudent && (!livePhase || livePhase === "lobby" || livePhase === "results" || livePhase === "ended");
-
   const mainContent = (
     <>
-    {liveTeacher && <TeacherPanel />}
-    {liveTeacherPreview && <TeacherPreviewPanel />}
-    {liveStudent && (
-      <LiveStudentOverlay
-        identity={liveStudent}
-        onLeave={onLiveLeave ?? (() => {})}
-        onSetSubmit={(fn) => { liveQuizSubmit.current = fn; }}
-        quizFillMode={quizFillMode}
-      />
-    )}
-    {liveStudent && <LivePhaseReporter onPhase={setLivePhase} />}
-    {!liveStudent && !liveTeacher && !liveTeacherPreview && showWelcome && (
+    {showWelcome && (
       <WelcomeModal onDismiss={() => dismissWelcome(false)} onTour={() => dismissWelcome(true)} isMobile={isPortraitMobile} />
     )}
-    {!liveStudent && !liveTeacher && !liveTeacherPreview && showCursorDemo && (
+    {showCursorDemo && (
       <CursorDemo isMobile={isPortraitMobile} onDone={() => setShowCursorDemo(false)} onReset={goOverview} />
     )}
-    {!liveStudent && !liveTeacher && showIntroStage && (
+    {showIntroStage && (
       <IntroStage onComplete={() => {
         try { localStorage.setItem("introStageSeen", "1"); } catch { /* noop */ }
         setShowIntroStage(false);
@@ -998,7 +869,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
         if (level !== 0) goOverview();
       }}
     >
-      <header className="shrink-0 bg-poster-bg/95 backdrop-blur border-b border-poster-ink/10 px-3 py-2 flex items-center justify-between gap-2" style={quizFillMode ? { display: "none" } : undefined}>
+      <header className="shrink-0 bg-poster-bg/95 backdrop-blur border-b border-poster-ink/10 px-3 py-2 flex items-center justify-between gap-2">
         <div className="font-display font-bold text-poster-teal text-sm leading-tight">
           German Grammar Cheatsheet
         </div>
@@ -1108,7 +979,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
       </header>
 
 
-      {!hidePoster && (isPortraitMobile ? (
+      {(isPortraitMobile ? (
         <MobilePosterSlider
           posterRef={posterRef}
           activeCase={activeCase}
@@ -1180,8 +1051,8 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
           <div
             style={{
               width: POSTER_W,
-              height: quizFillMode ? POSTER_H - 120 : POSTER_H,
-              transform: `translate(${pan.x + (liveTeacher ? 230 : 0)}px, ${pan.y + (quizFillMode ? 40 : 0)}px) scale(${renderedScale})`,
+              height: POSTER_H,
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${renderedScale})`,
               transformOrigin: "center center",
             }}
             className="relative shrink-0"
@@ -1208,8 +1079,6 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
               flourish={flourish}
               quizBlur={quiz.active}
               quizActive={quiz.active}
-              hidePossessives={!!liveStudent}
-              quizFill={quizFillMode}
               onTapQuestionWord={gameMode === "question-words" ? handleTapQuestionWord : undefined}
               questionWordSelected={gameMode === "question-words" ? qwSelectedWord : null}
               questionWordCorrect={gameMode === "question-words" ? qwCorrectWord : null}
