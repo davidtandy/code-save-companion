@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Crunk: swampy frog-like with bulging eyes and buck teeth -->
+  <!-- Lily pad hat -->
+  <ellipse cx="50" cy="16" rx="26" ry="10" fill="#2E7D32"/>
+  <circle cx="62" cy="12" r="5" fill="#E91E8C" opacity="0.8"/>
+  <!-- Body -->
+  <circle cx="50" cy="58" r="38" fill="#558B2F"/>
+  <!-- Warts -->
+  <circle cx="22" cy="48" r="5" fill="#4a7a28"/>
+  <circle cx="76" cy="52" r="4" fill="#4a7a28"/>
+  <circle cx="30" cy="70" r="3.5" fill="#4a7a28"/>
+  <circle cx="68" cy="72" r="4" fill="#4a7a28"/>
+  <!-- Bulging frog eyes on top of head -->
+  <ellipse cx="32" cy="34" rx="12" ry="14" fill="#8BC34A"/>
+  <ellipse cx="68" cy="34" rx="12" ry="14" fill="#8BC34A"/>
+  <circle cx="32" cy="35" r="7" fill="#222"/>
+  <circle cx="68" cy="35" r="7" fill="#222"/>
+  <circle cx="34" cy="32" r="3" fill="white"/>
+  <circle cx="70" cy="32" r="3" fill="white"/>
+  <!-- Wide smile with buck teeth -->
+  <path d="M26 68 Q50 82 74 68" fill="#2E7D32"/>
+  <path d="M26 68 Q50 76 74 68" fill="white"/>
+  <rect x="44" y="68" width="7" height="9" rx="2" fill="#2E7D32"/>
+  <rect x="49" y="68" width="7" height="9" rx="2" fill="#2E7D32"/>
+</svg>
