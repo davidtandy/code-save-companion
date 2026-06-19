@@ -49,6 +49,13 @@ function articleEn(nounArticle: string): string {
 }
 
 function buildSentence(q: any) {
+  if (!q.prep) {
+    const deBefore = q.pre || "";
+    const hint = q.correctWWord || (q as any).targetEn || "?";
+    const deAfter = (q.boxedNoun ? " " + q.boxedNoun : "") + (q.post || "");
+    return { deBefore, hint, deAfter, en: "", enBefore: "", enBlank: "", enAfter: "" };
+  }
+
   const prep = q.prep.token;
   const ctx = VERB_CTX[prep] ?? { de: "Er geht", en: "He goes" };
   const prepEn = ctx.enPrep ?? PREP_EN[prep] ?? prep;
