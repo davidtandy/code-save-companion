@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { LIVE_QUIZ_BANK, type QuizQuestion } from "@/components/poster/quiz/quizData";
+import { LIVE_QUIZ_BANK, type QuizQuestion, type QWQuestion, type WFragenQuestion } from "@/components/poster/quiz/quizData";
 import type { CaseKey } from "@/components/poster/wordData";
 
 /** Pill option choices per case for each question kind. */
@@ -243,3 +243,68 @@ export function sampleQuestions(count: number): QuizQuestion[] {
   return [...idx].map((i) => LIVE_QUIZ_BANK[i]);
 }
 
+const WFRAGEN_SENTENCES = [
+  { pre: "",                    boxedNoun: "Lehrer",   post: " erklärt die Aufgabe.", correctWWord: "WER",   correctPillId: "nom-der",   answer: "Der",   caseKey: "nom" as CaseKey },
+  { pre: "",                    boxedNoun: "Frau",     post: " öffnet die Tür.",      correctWWord: "WER",   correctPillId: "nom-eine",  answer: "Eine",  caseKey: "nom" as CaseKey },
+  { pre: "",                    boxedNoun: "Kind",     post: " spielt im Park.",      correctWWord: "WER",   correctPillId: "nom-das",   answer: "Das",   caseKey: "nom" as CaseKey },
+  { pre: "Er besucht ",         boxedNoun: "Freundin", post: ".",                     correctWWord: "WEN",   correctPillId: "akk-eine",  answer: "eine",  caseKey: "akk" as CaseKey },
+  { pre: "Er sieht ",           boxedNoun: "Lehrer",   post: ".",                     correctWWord: "WEN",   correctPillId: "akk-den",   answer: "den",   caseKey: "akk" as CaseKey },
+  { pre: "Sie besucht ",        boxedNoun: "Ärztin",   post: ".",                     correctWWord: "WEN",   correctPillId: "akk-die",   answer: "die",   caseKey: "akk" as CaseKey },
+  { pre: "Er dankt ",           boxedNoun: "Lehrerin", post: ".",                     correctWWord: "WEM",   correctPillId: "dat-der",   answer: "der",   caseKey: "dat" as CaseKey },
+  { pre: "Sie hilft ",          boxedNoun: "Mann",     post: ".",                     correctWWord: "WEM",   correctPillId: "dat-einem", answer: "einem", caseKey: "dat" as CaseKey },
+  { pre: "Er zeigt ",           boxedNoun: "Kind",     post: " das Bild.",            correctWWord: "WEM",   correctPillId: "dat-dem2",  answer: "dem",   caseKey: "dat" as CaseKey },
+  { pre: "Das Buch liegt ",     boxedPre: "auf",       boxedNoun: "Tisch",  post: ".", correctWWord: "WO",   correctPillId: "dat-dem",   answer: "dem",   caseKey: "dat" as CaseKey },
+  { pre: "Er steht ",           boxedPre: "vor",       boxedNoun: "Tür",    post: ".", correctWWord: "WO",   correctPillId: "dat-der",   answer: "der",   caseKey: "dat" as CaseKey },
+  { pre: "Das Kind schläft ",   boxedPre: "in",        boxedNoun: "Bett",   post: ".", correctWWord: "WO",   correctPillId: "dat-dem2",  answer: "dem",   caseKey: "dat" as CaseKey },
+  { pre: "Er stellt die Vase ", boxedPre: "auf",       boxedNoun: "Regal",  post: ".", correctWWord: "WOHIN", correctPillId: "akk-das",  answer: "das",   caseKey: "akk" as CaseKey },
+  { pre: "Er legt das Buch ",   boxedPre: "auf",       boxedNoun: "Tisch",  post: ".", correctWWord: "WOHIN", correctPillId: "akk-den",  answer: "den",   caseKey: "akk" as CaseKey },
+  { pre: "Sie geht ",           boxedPre: "in",        boxedNoun: "Schule", post: ".", correctWWord: "WOHIN", correctPillId: "akk-die",  answer: "die",   caseKey: "akk" as CaseKey },
+];
+
+/** Generate shuffled WFragen live quiz questions.
+ *  Easy: one wword question per sentence.
+ *  Hard: wword question followed immediately by article question per sentence. */
+export function sampleWFragenQuestions(level: "easy" | "hard"): WFragenQuestion[] {
+  const sentences = [...WFRAGEN_SENTENCES];
+  for (let i = sentences.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [sentences[i], sentences[j]] = [sentences[j], sentences[i]];
+  }
+  const result: WFragenQuestion[] = [];
+  sentences.forEach((s, i) => {
+    result.push({ kind: "wfragen", step: "wword", sentenceIndex: i, ...s });
+    if (level === "hard") {
+      result.push({ kind: "wfragen", step: "article", sentenceIndex: i, ...s });
+    }
+  });
+  return result;
+}
+
+const QW_WORDS = [
+  { word: "WER",   meaning: "who (subject)" },
+  { word: "WEN",   meaning: "whom (direct object)" },
+  { word: "WEM",   meaning: "to/for whom (indirect object)" },
+  { word: "WAS",   meaning: "what" },
+  { word: "WO",    meaning: "where (location)" },
+  { word: "WOHIN", meaning: "where to (direction)" },
+  { word: "WANN",  meaning: "when" },
+];
+
+/** Generate all QW questions (14 = 7 words × 2 directions), shuffled. */
+export function sampleQWQuestions(): QWQuestion[] {
+  const pool: QWQuestion[] = [];
+  for (const w of QW_WORDS) {
+    for (const dir of ["word-to-meaning", "meaning-to-word"] as const) {
+      const correctAnswer = dir === "word-to-meaning" ? w.meaning : w.word;
+      const options = dir === "word-to-meaning"
+        ? QW_WORDS.map((x) => x.meaning)
+        : QW_WORDS.map((x) => x.word);
+      pool.push({ kind: "question-words", word: w.word, meaning: w.meaning, direction: dir, correctAnswer, options });
+    }
+  }
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool;
+}
