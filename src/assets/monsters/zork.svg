@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Zork: mint green with oversized head and huge eyes -->
+  <!-- Tiny stub body -->
+  <ellipse cx="50" cy="90" rx="16" ry="10" fill="#4CAF7D"/>
+  <!-- Stub arms -->
+  <ellipse cx="28" cy="82" rx="8" ry="5" fill="#4CAF7D" transform="rotate(-30 28 82)"/>
+  <ellipse cx="72" cy="82" rx="8" ry="5" fill="#4CAF7D" transform="rotate(30 72 82)"/>
+  <!-- Big head -->
+  <circle cx="50" cy="48" r="44" fill="#66BB8A"/>
+  <!-- Enormous eyes -->
+  <circle cx="33" cy="44" r="15" fill="white"/>
+  <circle cx="67" cy="44" r="15" fill="white"/>
+  <circle cx="33" cy="44" r="9" fill="#222"/>
+  <circle cx="67" cy="44" r="9" fill="#222"/>
+  <circle cx="36" cy="40" r="4" fill="white"/>
+  <circle cx="70" cy="40" r="4" fill="white"/>
+  <!-- Tiny cute smile -->
+  <path d="M40 64 Q50 70 60 64" stroke="#2e7d52" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+</svg>

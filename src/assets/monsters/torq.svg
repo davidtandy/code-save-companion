@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Torq: orange with spiky crown -->
+  <!-- Spikes -->
+  <path d="M20 32 L26 14 L32 30 L38 12 L44 28 L50 10 L56 28 L62 12 L68 30 L74 14 L80 32" stroke="#e67e22" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Body -->
+  <circle cx="50" cy="60" r="38" fill="#F39C12"/>
+  <!-- Eyes -->
+  <circle cx="36" cy="54" r="11" fill="white"/>
+  <circle cx="64" cy="54" r="11" fill="white"/>
+  <circle cx="38" cy="54" r="7" fill="#222"/>
+  <circle cx="66" cy="54" r="7" fill="#222"/>
+  <circle cx="40" cy="51" r="3" fill="white"/>
+  <circle cx="68" cy="51" r="3" fill="white"/>
+  <!-- Big grin -->
+  <path d="M30 73 Q50 88 70 73" fill="#c07800"/>
+  <path d="M30 73 Q50 81 70 73" fill="white"/>
+</svg>

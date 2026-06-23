@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Plix: coral with stubby wings and yellow beak -->
+  <!-- Wings -->
+  <ellipse cx="12" cy="58" rx="10" ry="16" fill="#d4603a" transform="rotate(-15 12 58)"/>
+  <ellipse cx="88" cy="58" rx="10" ry="16" fill="#d4603a" transform="rotate(15 88 58)"/>
+  <!-- Body -->
+  <circle cx="50" cy="55" r="38" fill="#FF7043"/>
+  <!-- Brow ridges -->
+  <path d="M24 38 Q34 33 44 38" stroke="#d4603a" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M76 38 Q66 33 56 38" stroke="#d4603a" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- Eyes -->
+  <circle cx="34" cy="46" r="10" fill="white"/>
+  <circle cx="66" cy="46" r="10" fill="white"/>
+  <circle cx="34" cy="46" r="6" fill="#222"/>
+  <circle cx="66" cy="46" r="6" fill="#222"/>
+  <circle cx="36" cy="43" r="2.5" fill="white"/>
+  <circle cx="68" cy="43" r="2.5" fill="white"/>
+  <!-- Yellow beak -->
+  <path d="M42 60 L50 68 L58 60 Z" fill="#FFD700"/>
+  <path d="M42 60 L50 64 L58 60 Z" fill="#e6b800"/>
+</svg>

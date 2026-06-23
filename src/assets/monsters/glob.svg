@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Glob: seafoam blob with drips and innocent eyes -->
+  <!-- Drips -->
+  <ellipse cx="34" cy="94" rx="5" ry="7" fill="#2ab5a0"/>
+  <ellipse cx="50" cy="97" rx="4" ry="6" fill="#2ab5a0"/>
+  <ellipse cx="66" cy="94" rx="5" ry="7" fill="#2ab5a0"/>
+  <!-- Body blob -->
+  <path d="M50 14 C70 14 86 28 88 48 C90 68 78 86 62 90 C54 93 46 93 38 90 C22 86 10 68 12 48 C14 28 30 14 50 14 Z" fill="#3DD9C0"/>
+  <!-- Eyes -->
+  <circle cx="35" cy="48" r="12" fill="white"/>
+  <circle cx="65" cy="48" r="12" fill="white"/>
+  <circle cx="35" cy="48" r="7" fill="#222"/>
+  <circle cx="65" cy="48" r="7" fill="#222"/>
+  <circle cx="37" cy="45" r="3" fill="white"/>
+  <circle cx="67" cy="45" r="3" fill="white"/>
+  <!-- Neutral small mouth -->
+  <path d="M40 67 Q50 72 60 67" stroke="#1a8a78" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+</svg>
