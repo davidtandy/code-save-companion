@@ -1,0 +1,1 @@
+DELETE FROM public.quiz_responses; DELETE FROM public.quiz_session;
