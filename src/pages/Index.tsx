@@ -168,8 +168,9 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
   const [qwSelectedWord, setQwSelectedWord] = useState<string | null>(null);
   const [qwCorrectWord, setQwCorrectWord]   = useState<string | null>(null);
   const [qwWrongWord, setQwWrongWord]       = useState<string | null>(null);
-  const [showQwTuner, setShowQwTuner] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).has("qwtune"));
-  const [showWelcome, setShowWelcome] = useState(true);
+  // Tuner disabled for now — zone coordinates have been baked into DEFAULT_ZONES.
+  const [showQwTuner, setShowQwTuner] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [showCursorDemo, setShowCursorDemo] = useState(false);
   const [showIntroStage, setShowIntroStage] = useState(false);
   const [introNomOnly, setIntroNomOnly] = useState(false);
@@ -705,9 +706,20 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
   }, [quiz]);
 
 
-  function dismissWelcome(andTour = false) {
+  // Hold the welcome modal off-screen until the poster's load-in pill flicker
+  // (Poster.tsx — 2500ms) finishes, so it doesn't cover the animation.
+  useEffect(() => {
+    const t = setTimeout(() => setShowWelcome(true), 2500);
+    return () => clearTimeout(t);
+  }, []);
+
+  function closeWelcome() {
     setShowWelcome(false);
     try { localStorage.setItem("welcomeSeen", "1"); } catch { /* noop */ }
+  }
+
+  function dismissWelcome(andTour = false) {
+    closeWelcome();
     if (andTour) { setShowIntroStage(true); return; }
     setShowCursorDemo(true);
   }
@@ -927,7 +939,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
       />
     )}
     {!liveStudent && !liveTeacher && !liveTeacherPreview && showWelcome && (
-      <WelcomeModal onDismiss={() => dismissWelcome(false)} onTour={() => dismissWelcome(true)} isMobile={isPortraitMobile} />
+      <WelcomeModal onDismiss={() => dismissWelcome(false)} onBackdropDismiss={closeWelcome} onTour={() => dismissWelcome(true)} isMobile={isPortraitMobile} />
     )}
     {!liveStudent && !liveTeacher && !liveTeacherPreview && showCursorDemo && (
       <CursorDemo isMobile={isPortraitMobile} onDone={() => setShowCursorDemo(false)} onReset={goOverview} />

@@ -14,16 +14,16 @@ export type QWZoneConfig = {
 
 export const DEFAULT_ZONES: QWZoneConfig = {
   nom: [
-    { word: "WER", x: 20, y: 60, w: 60, h: 35 },
+    { word: "WER", x: 19, y: 71, w: 60, h: 25 },
   ],
   akk: [
-    { word: "WEN",   x: 2,  y: 58, w: 42, h: 38 },
-    { word: "WOHIN", x: 50, y: 44, w: 48, h: 52 },
+    { word: "WEN",   x: 0,  y: 70, w: 37, h: 38 },
+    { word: "WOHIN", x: 50, y: 63, w: 49, h: 52 },
   ],
   dat: [
-    { word: "WEM",  x: 20, y: 5,  w: 60, h: 35 },
-    { word: "WO",   x: 3,  y: 54, w: 44, h: 42 },
-    { word: "WANN", x: 52, y: 54, w: 44, h: 42 },
+    { word: "WEM",  x: 20, y: 9,  w: 60, h: 35 },
+    { word: "WO",   x: 0,  y: 70, w: 37, h: 18 },
+    { word: "WANN", x: 49, y: 71, w: 44, h: 18 },
   ],
 };
 
@@ -66,6 +66,10 @@ type SingleProps = {
   tunerMode?: boolean;
   className?: string;
   imgClassName?: string;
+  /** Size the zone box by a fixed height (auto width) instead of full width,
+   *  so groups with different native aspect ratios (chef-hat is near-square,
+   *  bicycle/envelope are wide) still occupy the same height as each other. */
+  fixedHeight?: boolean;
 };
 
 const SVG_SRC: Record<keyof QWZoneConfig, string> = {
@@ -86,6 +90,7 @@ export function QWSvgSingle({
   tunerMode = false,
   className,
   imgClassName = "h-28 object-contain",
+  fixedHeight = false,
 }: SingleProps) {
   const color = CASE_COLOR[group];
 
@@ -101,11 +106,8 @@ export function QWSvgSingle({
     );
   }
 
-  return (
-    <div
-      className={cn("relative inline-block", className)}
-      style={{ aspectRatio: String(RATIOS[group]) }}
-    >
+  const content = (
+    <>
       <img
         src={SVG_SRC[group]}
         alt=""
@@ -141,10 +143,9 @@ export function QWSvgSingle({
             className="hover:opacity-80 active:scale-95 transition-transform"
           >
             <span style={{
-              fontSize: "clamp(9px, 2.5cqw, 15px)", fontWeight: 800,
-              color: isCorrect ? "#16a34a" : isWrong ? "#dc2626" : isSelected ? color : `${color}cc`,
+              fontSize: "clamp(13px, 3.6cqw, 21px)", fontWeight: 800,
+              color: "transparent",
               letterSpacing: "0.05em", pointerEvents: "none",
-              textShadow: "0 0 6px white, 0 0 14px white",
               userSelect: "none",
             }}>
               {zone.word}
@@ -152,6 +153,25 @@ export function QWSvgSingle({
           </button>
         );
       })}
+    </>
+  );
+
+  if (fixedHeight) {
+    return (
+      <div className={cn("relative", className)}>
+        <div className="relative mx-auto h-28" style={{ aspectRatio: String(RATIOS[group]) }}>
+          {content}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn("relative inline-block", className)}
+      style={{ aspectRatio: String(RATIOS[group]) }}
+    >
+      {content}
     </div>
   );
 }

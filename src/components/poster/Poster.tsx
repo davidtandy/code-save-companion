@@ -188,8 +188,9 @@ const Pill = ({
   // Pronoun pills with multiple forms (er/sie/es, ihn/sie/es, etc.) always render
   // as separate tappable buttons. Possessives (sein/ihr/sein) are excluded.
   if (subs && id && !morph && word?.type === "pronoun") {
+    const groupDimmed = dim && !active && !(activeWordId && activeWordId.startsWith(`${id}::`));
     return (
-      <div className={cn("flex gap-1 items-stretch", className)}>
+      <div className={cn("flex gap-1 items-stretch", groupDimmed && "opacity-60 transition-opacity duration-200", className)}>
         {subs.map((sw, i) => {
           const subId = `${id}::${i}`;
           const isSubActive = activeWordId === subId;
@@ -872,6 +873,7 @@ export const Poster = forwardRef<PosterHandle, Props>(
                 activeWord={questionWordSelected} correctWord={questionWordCorrect} wrongWord={questionWordWrong}
                 imgClassName="h-28 object-contain w-full"
                 className="w-full"
+                fixedHeight
               />
             </button>
             )}
@@ -950,6 +952,7 @@ export const Poster = forwardRef<PosterHandle, Props>(
                 activeWord={questionWordSelected} correctWord={questionWordCorrect} wrongWord={questionWordWrong}
                 imgClassName="h-28 object-contain w-full"
                 className="w-full"
+                fixedHeight
               />
             </button>
             )}
@@ -1018,6 +1021,7 @@ export const Poster = forwardRef<PosterHandle, Props>(
                 activeWord={questionWordSelected} correctWord={questionWordCorrect} wrongWord={questionWordWrong}
                 imgClassName="h-28 object-contain w-full"
                 className="w-full"
+                fixedHeight
               />
             </button>
             )}
