@@ -52,10 +52,9 @@ export function TeacherWFragenDisplay({
         {q.pre && <span>{q.pre}</span>}
         <span className="inline-flex items-baseline gap-1.5 border-2 border-poster-teal/50 rounded px-2 py-0.5 bg-poster-teal/5 text-2xl">
           {q.boxedPre && <span>{q.boxedPre}</span>}
-          {!isWword && showBreakdown && (
+          {!isWword && showBreakdown ? (
             <span className="text-poster-teal font-bold">{q.answer}</span>
-          )}
-          {!isWword && !showBreakdown && (
+          ) : (
             <span className="text-poster-ink/30 border-b-2 border-poster-ink/30 min-w-[2rem] inline-block text-center">
               {q.answer.toLowerCase().startsWith("ein") ? "a/an" : "the"}
             </span>
