@@ -34,6 +34,7 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
 
   const myAnswer = myResponses.find((r) => r.question_index === idx);
   const locked = !!myAnswer?.is_correct;
+  const artFilled = q.step === "article" && locked;
 
   const startedAt = session.question_started_at
     ? new Date(session.question_started_at).getTime()
@@ -87,11 +88,19 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
           {q.pre && <span>{q.pre}</span>}
           <span className="inline-flex items-baseline gap-1.5 border-2 border-poster-teal/50 rounded px-2 py-0.5 bg-poster-teal/5">
             {q.boxedPre && <span>{q.boxedPre}</span>}
-            {q.step === "article" && (
-              <span className="text-poster-ink/30 border-b-2 border-poster-ink/30 min-w-[2rem] inline-block text-center text-sm">
-                {q.answer.toLowerCase().startsWith("ein") ? "a/an" : "the"}
+            <span className="flex flex-col items-center">
+              <span className={cn(
+                "border-b-2 min-w-[2rem] inline-block text-center text-sm leading-snug",
+                artFilled ? "border-poster-teal text-poster-teal font-bold" : "border-poster-ink/30 text-poster-ink/30",
+              )}>
+                {artFilled ? q.answer : " "}
               </span>
-            )}
+              {!artFilled && (
+                <span className="text-[9px] text-poster-ink/40 leading-none">
+                  {q.answer.toLowerCase().startsWith("ein") ? "a/an" : "the"}
+                </span>
+              )}
+            </span>
             <span>{q.boxedNoun}</span>
           </span>
           {q.post && <span>{q.post}</span>}
