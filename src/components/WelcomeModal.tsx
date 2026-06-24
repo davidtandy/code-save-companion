@@ -9,17 +9,18 @@ const CASES = [
 
 type Props = {
   onDismiss: () => void;
+  onBackdropDismiss?: () => void;
   onTour: () => void;
   isMobile?: boolean;
 };
 
-export function WelcomeModal({ onDismiss, onTour, isMobile = false }: Props) {
+export function WelcomeModal({ onDismiss, onBackdropDismiss, onTour, isMobile = false }: Props) {
   const CursorIcon = isMobile ? Hand : MousePointer2;
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-poster-ink/30 backdrop-blur-sm px-4"
-      onClick={onDismiss}
+      onClick={onBackdropDismiss ?? onDismiss}
     >
       <div
         data-no-reset

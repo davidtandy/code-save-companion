@@ -1,6 +1,7 @@
 import React, { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { CaseKey } from "../wordData";
+import { WFragenEasyExplainer } from "./WFragenEasyExplainer";
 
 type WWord = "Wer" | "Wen" | "Wem" | "Wo" | "Wohin";
 type GameStep = "wword" | "article";
@@ -49,6 +50,14 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+// Same sentence used in the Easy-mode explainer demo — always goes first so
+// the first real question reinforces what the player just saw.
+const INTRO_QUESTION = QUESTIONS.find((q) => q.correctPillId === "nom-das" && q.boxedNoun === "Kind")!;
+
+function shuffledQuestions(): Question[] {
+  return [INTRO_QUESTION, ...shuffle(QUESTIONS.filter((q) => q !== INTRO_QUESTION))];
+}
+
 type Props = {
   onFlash: (result: "correct" | "wrong", pillId: string) => void;
   onExit: () => void;
@@ -59,7 +68,8 @@ export type WFragenHandle = { onPillTap: (id: string) => void; onWordTap: (word:
 
 export const WFragenGame = forwardRef<WFragenHandle, Props>(({ onFlash, onExit, onStepChange }, ref) => {
   const [level, setLevel] = useState<Level | null>(null);
-  const [questions, setQuestions] = useState(() => shuffle(QUESTIONS));
+  const [showEasyIntro, setShowEasyIntro] = useState(false);
+  const [questions, setQuestions] = useState(() => shuffledQuestions());
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const dragStartRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
 
@@ -181,7 +191,7 @@ export const WFragenGame = forwardRef<WFragenHandle, Props>(({ onFlash, onExit, 
   }), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function restart() {
-    setQuestions(shuffle(QUESTIONS));
+    setQuestions(shuffledQuestions());
     setIndex(0);
     setGameStep("wword");
     setWFeedback(null);
@@ -215,7 +225,7 @@ export const WFragenGame = forwardRef<WFragenHandle, Props>(({ onFlash, onExit, 
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => setLevel("easy")}
+            onClick={() => { setLevel("easy"); setShowEasyIntro(true); }}
             className="flex-1 py-4 rounded-xl border-2 border-poster-teal/40 hover:border-poster-teal hover:bg-poster-teal/5 transition-colors text-left px-4 group"
           >
             <div className="font-bold text-poster-teal text-sm mb-1">Easy</div>
@@ -235,6 +245,11 @@ export const WFragenGame = forwardRef<WFragenHandle, Props>(({ onFlash, onExit, 
         </div>
       </div>
     );
+  }
+
+  // ── Easy-mode explainer (one-time, shown right after picking Easy) ────────
+  if (level === "easy" && showEasyIntro) {
+    return <WFragenEasyExplainer onDone={() => setShowEasyIntro(false)} />;
   }
 
   // ── End screen ────────────────────────────────────────────────────────────
