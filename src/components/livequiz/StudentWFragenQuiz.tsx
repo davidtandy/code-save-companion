@@ -114,8 +114,8 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
       {/* Interaction area */}
       <div className="flex-1 flex flex-col justify-center min-h-0">
         {q.step === "wword" ? (
-          /* SVG click map */
-          <div className="px-3 pb-4">
+          /* SVG click map — no cheatsheet involved on this step, so size up to use the space */
+          <div className="px-3 pb-4 scale-125 sm:scale-150 origin-center">
             <QuestionWordSVGMap
               zones={zones}
               onWordClick={handleTap}

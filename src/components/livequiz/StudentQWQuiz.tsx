@@ -78,8 +78,8 @@ export function StudentQWQuiz({ identity, session, myResponses, submitting, onAn
         </div>
       </div>
 
-      {/* SVG click map — fills remaining space */}
-      <div className="flex-1 flex flex-col justify-center px-3 pb-6 min-h-0">
+      {/* SVG click map — fills remaining space; no cheatsheet involved, so size up */}
+      <div className="flex-1 flex flex-col justify-center px-3 pb-6 min-h-0 scale-125 sm:scale-150 origin-center">
         <QuestionWordSVGMap
           zones={zones}
           onWordClick={handleTap}
