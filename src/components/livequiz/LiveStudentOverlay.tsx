@@ -7,6 +7,8 @@ import type { StudentIdentity } from "./StudentLobby";
 import { eliminationTiersData, computeElimCount } from "./scoring";
 import { useServerFn } from "@tanstack/react-start";
 import { submitResponse } from "@/lib/livequiz.functions";
+import { StudentQWQuiz } from "./StudentQWQuiz";
+import { StudentWFragenQuiz } from "./StudentWFragenQuiz";
 
 type Props = {
   identity: StudentIdentity;
@@ -109,7 +111,10 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
   }, [session?.phase, locked, idx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Progressively grey out wrong pills: groups at t=2s and t=4s, then individual pills from t=6s.
-  const tiers = q ? eliminationTiersData(q) : null;
+  // (Question Words / W-Fragen questions don't have the prep-pill shape this expects.)
+  const tiers = q && session?.game_mode !== "question-words" && session?.game_mode !== "wfragen"
+    ? eliminationTiersData(q)
+    : null;
   const cappedElimCount = (session?.phase === "active" && !locked && tiers)
     ? computeElimCount(elapsed, timerMaxMs, tiers.tier0Count, tiers.tier1Count, tiers.tier2Count, tiers.tier3Count, tiers.tier4Count)
     : 0;
@@ -212,6 +217,32 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
           </button>
         </div>
       </div>
+    );
+  }
+
+  /* ── Question Words / W-Fragen: dedicated full-screen quiz UIs ──
+   * Their question shape has no `.prep` field, so they can't go through the
+   * Article-Quiz prompt-building logic below. */
+  if (session.phase === "active" && session.game_mode === "question-words") {
+    return (
+      <StudentQWQuiz
+        identity={identity}
+        session={session}
+        myResponses={myResponses}
+        submitting={submitting}
+        onAnswer={handleAnswer}
+      />
+    );
+  }
+  if (session.phase === "active" && session.game_mode === "wfragen") {
+    return (
+      <StudentWFragenQuiz
+        identity={identity}
+        session={session}
+        myResponses={myResponses}
+        submitting={submitting}
+        onAnswer={handleAnswer}
+      />
     );
   }
 
