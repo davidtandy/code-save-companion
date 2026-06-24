@@ -111,6 +111,7 @@ import { avatarSrc } from "./avatars";
 import { sampleQuestions, sampleQWQuestions, sampleWFragenQuestions, PILL_LABEL, eliminationTiersData, computeElimCount } from "./scoring";
 import { TeacherQWDisplay } from "./TeacherQWDisplay";
 import { TeacherWFragenDisplay } from "./TeacherWFragenDisplay";
+import { QuestionWordSVGMap, loadZones } from "@/components/poster/QuestionWordSVGMap";
 import { Play, SkipForward, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -403,8 +404,26 @@ export function TeacherPanel() {
       : buildSentence(activeQ)
     : null;
 
+  // W-Fragen's word step doesn't involve the cheatsheet at all (students answer via
+  // the question-word icons) — hide it and show the three icons large instead.
+  const showBigIconsTakeover = session?.phase === "active" && session?.game_mode === "wfragen" && activeQ?.step === "wword";
+
   return (
     <>
+      {showBigIconsTakeover && (
+        <div className="fixed inset-0 z-40 bg-poster-bg flex items-center justify-center px-12">
+          <div className="w-full max-w-4xl">
+            <QuestionWordSVGMap
+              zones={loadZones()}
+              onWordClick={() => {}}
+              correctWord={showBreakdown ? activeQ.correctWWord : null}
+              gap={24}
+              className="w-full"
+            />
+          </div>
+        </div>
+      )}
+
       {/* ── QR — fixed top-left, doubles on hover ── */}
       <div className="fixed top-9 left-4 z-[150] flex flex-col items-start gap-1.5 transition-transform duration-200 origin-top-left hover:scale-[2]">
         <div className="bg-white rounded-xl p-2 shadow-lg border border-poster-ink/10">
