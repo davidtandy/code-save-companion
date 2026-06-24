@@ -10,6 +10,10 @@ import { submitResponse } from "@/lib/livequiz.functions";
 import { StudentQWQuiz } from "./StudentQWQuiz";
 import { StudentWFragenQuiz } from "./StudentWFragenQuiz";
 
+const W_EN: Record<string, string> = {
+  WER: "who", WEN: "whom", WEM: "to whom", WO: "where", WOHIN: "where to",
+};
+
 type Props = {
   identity: StudentIdentity;
   onLeave: () => void;
@@ -111,10 +115,11 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
   }, [session?.phase, locked, idx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Progressively grey out wrong pills: groups at t=2s and t=4s, then individual pills from t=6s.
-  // (Question Words / W-Fragen questions don't have the prep-pill shape this expects.)
-  const tiers = q && session?.game_mode !== "question-words" && session?.game_mode !== "wfragen"
-    ? eliminationTiersData(q)
-    : null;
+  // Question Words has no poster pill at all; W-Fragen's word step answers via the
+  // question-word icons, not poster pills — only its article step uses real pills.
+  const usesPosterPills = session?.game_mode !== "question-words"
+    && (session?.game_mode !== "wfragen" || q?.step === "article");
+  const tiers = q && usesPosterPills ? eliminationTiersData(q) : null;
   const cappedElimCount = (session?.phase === "active" && !locked && tiers)
     ? computeElimCount(elapsed, timerMaxMs, tiers.tier0Count, tiers.tier1Count, tiers.tier2Count, tiers.tier3Count, tiers.tier4Count)
     : 0;
@@ -220,9 +225,8 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
     );
   }
 
-  /* ── Question Words / W-Fragen: dedicated full-screen quiz UIs ──
-   * Their question shape has no `.prep` field, so they can't go through the
-   * Article-Quiz prompt-building logic below. */
+  /* ── Question Words: dedicated full-screen quiz UI — its question shape has
+   * no `.prep` field and no poster pill to tap. */
   if (session.phase === "active" && session.game_mode === "question-words") {
     return (
       <StudentQWQuiz
@@ -234,7 +238,9 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
       />
     );
   }
-  if (session.phase === "active" && session.game_mode === "wfragen") {
+  /* ── W-Fragen word step: full-screen question-word icon picker (no poster pill
+   * involved). Its article step, below, taps real poster pills like Article Quiz. */
+  if (session.phase === "active" && session.game_mode === "wfragen" && q?.step === "wword") {
     return (
       <StudentWFragenQuiz
         identity={identity}
@@ -250,12 +256,19 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
   if (session.phase !== "active" || !q) return null;
 
   const isPronoun = q.kind === "pronoun";
+  const isWfragenArticle = q.kind === "wfragen";
   const prompt = q.sentence
     ? q.sentence.replace("_____", "___")
+    : isWfragenArticle
+    ? `${q.pre ?? ""}${q.boxedPre ? q.boxedPre + " " : ""}___ ${q.boxedNoun ?? ""}${q.post ?? ""}`.trim()
     : isPronoun
     ? `${q.prefix ?? ""} ${q.prep.token} ___ ${q.suffix ?? ""}`.trim()
     : `${q.prefix ?? ""} ${q.prep.token} ___ ${q.nounDe}${q.suffix ? " " + q.suffix : ""}`.trim();
-  const promptEn = q.sentenceEn ?? (isPronoun ? q.targetEn : `${q.nounArticle ?? ""} ${q.nounEn ?? ""}`.trim());
+  const promptEn = q.sentenceEn ?? (
+    isWfragenArticle ? `${q.correctWWord}? — ${W_EN[q.correctWWord] ?? ""}`
+    : isPronoun ? q.targetEn
+    : `${q.nounArticle ?? ""} ${q.nounEn ?? ""}`.trim()
+  );
 
   return (
     <>
