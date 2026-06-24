@@ -201,7 +201,11 @@ export function QuestionWordSVGMap({
 }: Props) {
   const zones = zonesProp ?? DEFAULT_ZONES;
 
-  const FLEX: Record<keyof QWZoneConfig, number> = { akk: 1, nom: 0.5, dat: 1 };
+  // Each column's flex-grow share is set to its own aspect ratio, so that
+  // width (flex-grow * container) / ratio works out equal for all three —
+  // same rendered height regardless of how square (nom) or wide (akk/dat)
+  // the source SVG is.
+  const FLEX: Record<keyof QWZoneConfig, number> = RATIOS;
 
   const groups: (keyof QWZoneConfig)[] = ["akk", "nom", "dat"];
 
