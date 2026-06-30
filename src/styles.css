@@ -164,7 +164,7 @@
   border-color: hsl(var(--border));
 }
 body {
-  background-color: hsl(var(--background));
+  background-color: hsl(var(--poster-bg));
   color: hsl(var(--foreground));
   font-family: "Nunito", system-ui, sans-serif;
 }
@@ -466,6 +466,18 @@ body {
 .rotate-prompt-phone {
   animation: rotate-hint 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   transform-origin: center;
+}
+
+@keyframes drift-a {
+  0%   { transform: translateX(-25%); }
+  100% { transform: translateX(-12%); }
+}
+@keyframes drift-b {
+  0%   { transform: translateX(-12%); }
+  100% { transform: translateX(-25%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-repeat-row { animation: none !important; }
 }
 
 @keyframes prep-shake {

@@ -41,6 +41,7 @@ import { TeacherPreviewPanel } from "@/components/livequiz/TeacherPreviewPanel";
 import { LiveStudentOverlay } from "@/components/livequiz/LiveStudentOverlay";
 import { LiveQuizProvider } from "@/components/livequiz/LiveQuizProvider";
 import { RotatePrompt } from "@/components/RotatePrompt";
+import { StepRepeatBackground } from "@/components/StepRepeatBackground";
 
 function getLiveMode(): "student" | "teacher" | "preview" | null {
   if (typeof window === "undefined") return null;
@@ -958,7 +959,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
       }} />
     )}
     <main
-      className={cn("h-[100dvh] w-screen bg-poster-bg overflow-hidden flex flex-col", introNomOnly && "intro-nom-only")}
+      className={cn("h-[100dvh] w-screen overflow-hidden flex flex-col relative isolate", introNomOnly && "intro-nom-only")}
       onClick={(e) => {
         const t = e.target as HTMLElement;
         if (t.closest("button, [role='button'], a, input, select, textarea, [data-no-reset]")) return;
@@ -966,6 +967,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
         if (level !== 0) goOverview();
       }}
     >
+      <StepRepeatBackground />
       <header className="shrink-0 bg-poster-bg/95 backdrop-blur border-b border-poster-ink/10 px-3 py-2 flex items-center justify-between gap-2" style={quizFillMode ? { display: "none" } : undefined}>
         <div className="font-display font-bold text-poster-teal text-sm leading-tight">
           German Grammar Cheatsheet
@@ -1112,7 +1114,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
       ) : (
         <div
           ref={stageRef}
-          className="flex-1 min-h-0 relative overflow-hidden bg-poster-bg flex items-center justify-center touch-none"
+          className="flex-1 min-h-0 relative overflow-hidden flex items-center justify-center touch-none"
           onPointerDownCapture={(e) => {
             setSheetSide(sideForPoint(e.clientX, e.clientY));
             const el = (e.target as HTMLElement).closest("[data-cell-id], [data-zone]") as HTMLElement | null;
