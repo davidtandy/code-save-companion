@@ -190,7 +190,7 @@ const Pill = ({
   if (subs && id && !morph && word?.type === "pronoun") {
     const groupDimmed = dim && !active && !(activeWordId && activeWordId.startsWith(`${id}::`));
     return (
-      <div className={cn("flex gap-1 items-stretch", groupDimmed && "opacity-60 transition-opacity duration-200", className)}>
+      <div className={cn("flex gap-1 items-stretch", className)}>
         {subs.map((sw, i) => {
           const subId = `${id}::${i}`;
           const isSubActive = activeWordId === subId;
@@ -209,6 +209,7 @@ const Pill = ({
                 "transition-transform active:scale-95",
                 slim ? "h-7 text-xs shadow-none" : "h-9 text-sm",
                 bg,
+                groupDimmed && "opacity-60 transition-opacity duration-200",
                 isSubActive && "ring-2 ring-poster-ink/50",
               )}
             >
