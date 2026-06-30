@@ -1,9 +1,110 @@
 // @ts-nocheck
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import cloudGreen from "@/assets/poster/cloud-green.svg";
 import cloudPurple from "@/assets/poster/cloud-purple.svg";
+
+const INTRO_KEY = "genau_verb_intro_seen";
+
+function VerbIntroCard({ onDismiss }: { onDismiss: () => void }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const MNEMONICS = [
+    ["helfen",  "help to you",    "Er hilft mir"],
+    ["glauben", "believe to you", "Ich glaube ihm"],
+    ["danken",  "thank to you",   "Ich danke dir"],
+  ] as const;
+
+  return (
+    <div
+      className="absolute inset-0 flex items-center justify-center z-30 px-5"
+      style={{ background: "rgba(214,234,248,0.55)", backdropFilter: "blur(3px)" }}
+      onClick={onDismiss}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          opacity: visible ? 1 : 0,
+          transform: visible ? "translateY(0) scale(1)" : "translateY(16px) scale(0.96)",
+          transition: "opacity 380ms ease, transform 380ms cubic-bezier(0.22,1,0.36,1)",
+        }}
+        className="w-full max-w-[340px] rounded-2xl overflow-hidden shadow-2xl bg-white"
+      >
+        {/* Sky header */}
+        <div
+          style={{ background: "linear-gradient(160deg, #c8e6f7 0%, #ddf0fb 60%, #eef7fd 100%)" }}
+          className="relative px-6 pt-7 pb-5 text-center overflow-hidden"
+        >
+          <div className="absolute top-3 left-4 text-2xl opacity-40 select-none pointer-events-none">☁</div>
+          <div className="absolute top-5 right-6 text-xl opacity-25 select-none pointer-events-none">☁</div>
+          <div className="absolute bottom-2 left-12 text-base opacity-20 select-none pointer-events-none">☁</div>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-poster-purple/70 mb-1.5">verb grammar</p>
+          <h2 className="font-display font-bold text-[22px] leading-tight text-poster-ink">
+            Verbs choose their case
+          </h2>
+          <p className="text-[13px] text-poster-ink/55 mt-1.5 leading-snug">
+            It's baked into the verb — not the sentence.
+          </p>
+        </div>
+
+        {/* Body */}
+        <div className="px-5 py-4 space-y-3.5">
+          <p className="text-[13px] text-poster-ink/75 leading-snug">
+            <span className="font-semibold text-poster-green">Akkusativ verbs</span> take a direct
+            object. <span className="font-semibold text-poster-purple">Dativ verbs</span> are
+            different — they secretly mean giving something <em>to</em> someone.
+          </p>
+
+          <div
+            className="rounded-xl px-4 py-3.5 space-y-2"
+            style={{
+              background: "hsl(var(--poster-purple) / 0.07)",
+              border: "1px solid hsl(var(--poster-purple) / 0.18)",
+            }}
+          >
+            <p className="text-[11px] font-bold uppercase tracking-widest text-poster-purple">
+              The hidden "to" trick
+            </p>
+            <p className="text-[12px] text-poster-ink/60 leading-snug">
+              Read Dativ verbs as if there's a "to" hidden in English:
+            </p>
+            <div className="space-y-1.5 text-[12px]">
+              {MNEMONICS.map(([de, mnemonic, ex]) => (
+                <div key={de} className="flex items-baseline gap-1.5 flex-wrap">
+                  <span className="font-bold text-poster-ink font-slab">{de}</span>
+                  <span className="text-poster-ink/30">→</span>
+                  <span className="text-poster-ink/60 italic">"{mnemonic}"</span>
+                  <span className="text-poster-ink/30 text-[10px]">· {ex}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <p className="text-[11px] text-poster-ink/40 leading-snug">
+            That phantom "to" is why Dativ verbs take{" "}
+            <span className="font-semibold">mir · dir · ihm</span> — not mich · dich · ihn.
+          </p>
+        </div>
+
+        {/* CTA */}
+        <div className="px-5 pb-5">
+          <button
+            onClick={onDismiss}
+            className="w-full py-3 rounded-xl font-display font-bold text-white text-sm tracking-wide"
+            style={{ background: "linear-gradient(135deg, #5bafd6 0%, #7ec8e3 100%)" }}
+          >
+            Explore the verbs ↗
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 type Verb = {
   de: string;
@@ -153,6 +254,12 @@ export function VerbCloudOverlay({ onClose }: Props) {
 
   const [selectedAkk, setSelectedAkk] = useState<number | null>(null);
   const [selectedDat, setSelectedDat] = useState<number | null>(null);
+
+  const [showIntro, setShowIntro] = useState(() => !localStorage.getItem(INTRO_KEY));
+  function dismissIntro() {
+    localStorage.setItem(INTRO_KEY, "1");
+    setShowIntro(false);
+  }
 
   function handleClose() {
     setIsClosing(true);
@@ -320,6 +427,8 @@ export function VerbCloudOverlay({ onClose }: Props) {
           ))}
         </div>
       </div>
+
+      {showIntro && <VerbIntroCard onDismiss={dismissIntro} />}
     </div>
   );
 }
