@@ -301,6 +301,10 @@ body {
 
 @keyframes verb-overlay-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes verb-overlay-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes memory-tip-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 @keyframes pill-load-flicker {
   0%   { background-color: hsl(0 0% 72%); }

@@ -144,36 +144,37 @@ type Verb = {
   de: string;
   en: string;
   example: { de: string; en: string };
+  memory: string;
 };
 
 const AKK_VERBS: Verb[] = [
-  { de: "kaufen",   en: "to buy",     example: { de: "Ich kaufe einen Apfel.", en: "I'm buying an apple." } },
-  { de: "sehen",    en: "to see",     example: { de: "Er sieht den Film.", en: "He sees the film." } },
-  { de: "kennen",   en: "to know",    example: { de: "Ich kenne ihn gut.", en: "I know him well." } },
-  { de: "lieben",   en: "to love",    example: { de: "Sie liebt ihn.", en: "She loves him." } },
-  { de: "finden",   en: "to find",    example: { de: "Sie findet den Schlüssel.", en: "She finds the key." } },
-  { de: "machen",   en: "to make/do", example: { de: "Er macht einen Fehler.", en: "He makes a mistake." } },
-  { de: "brauchen", en: "to need",    example: { de: "Ich brauche einen Arzt.", en: "I need a doctor." } },
-  { de: "nehmen",   en: "to take",    example: { de: "Er nimmt den Bus.", en: "He takes the bus." } },
-  { de: "fragen",   en: "to ask",     example: { de: "Sie fragt ihn.", en: "She asks him." } },
-  { de: "lesen",    en: "to read",    example: { de: "Er liest einen Brief.", en: "He reads a letter." } },
-  { de: "besuchen", en: "to visit",   example: { de: "Wir besuchen ihn.", en: "We visit him." } },
-  { de: "haben",    en: "to have",    example: { de: "Ich habe einen Hund.", en: "I have a dog." } },
+  { de: "kaufen",   en: "to buy",     example: { de: "Ich kaufe einen Apfel.", en: "I'm buying an apple." },  memory: "Cash leaves your hand, goods land in yours — a direct swap." },
+  { de: "sehen",    en: "to see",     example: { de: "Er sieht den Film.", en: "He sees the film." },         memory: "Your gaze reaches out and touches what you see." },
+  { de: "kennen",   en: "to know",    example: { de: "Ich kenne ihn gut.", en: "I know him well." },          memory: "You hold a person in your mental grip — you know them." },
+  { de: "lieben",   en: "to love",    example: { de: "Sie liebt ihn.", en: "She loves him." },                memory: "Love wraps directly around its object." },
+  { de: "finden",   en: "to find",    example: { de: "Sie findet den Schlüssel.", en: "She finds the key." }, memory: "Finding = seizing something that was hiding from you." },
+  { de: "machen",   en: "to make/do", example: { de: "Er macht einen Fehler.", en: "He makes a mistake." },   memory: "You reach out and shape the world directly." },
+  { de: "brauchen", en: "to need",    example: { de: "Ich brauche einen Arzt.", en: "I need a doctor." },     memory: "Need pulls the object straight toward you." },
+  { de: "nehmen",   en: "to take",    example: { de: "Er nimmt den Bus.", en: "He takes the bus." },          memory: "Taking is the most direct action there is." },
+  { de: "fragen",   en: "to ask",     example: { de: "Sie fragt ihn.", en: "She asks him." },                 memory: "A question is an arrow fired straight at someone." },
+  { de: "lesen",    en: "to read",    example: { de: "Er liest einen Brief.", en: "He reads a letter." },     memory: "Your eyes devour the page directly." },
+  { de: "besuchen", en: "to visit",   example: { de: "Wir besuchen ihn.", en: "We visit him." },              memory: "You go directly to someone's door." },
+  { de: "haben",    en: "to have",    example: { de: "Ich habe einen Hund.", en: "I have a dog." },           memory: "Possession is the most direct relationship possible." },
 ];
 
 const DAT_VERBS: Verb[] = [
-  { de: "helfen",     en: "to help",         example: { de: "Er hilft mir.", en: "He helps me." } },
-  { de: "danken",     en: "to thank",        example: { de: "Ich danke dir.", en: "I thank you." } },
-  { de: "gefallen",   en: "to please/like",  example: { de: "Es gefällt mir.", en: "I like it." } },
-  { de: "folgen",     en: "to follow",       example: { de: "Folg mir!", en: "Follow me!" } },
-  { de: "gehören",    en: "to belong to",    example: { de: "Das gehört mir.", en: "That belongs to me." } },
-  { de: "glauben",    en: "to believe",      example: { de: "Ich glaube ihm.", en: "I believe him." } },
-  { de: "antworten",  en: "to answer",       example: { de: "Sie antwortet ihm.", en: "She answers him." } },
-  { de: "vertrauen",  en: "to trust",        example: { de: "Ich vertraue dir.", en: "I trust you." } },
-  { de: "zuhören",    en: "to listen to",    example: { de: "Hör mir zu!", en: "Listen to me!" } },
-  { de: "empfehlen",  en: "to recommend",    example: { de: "Ich empfehle dir das.", en: "I recommend that to you." } },
-  { de: "schaden",    en: "to harm",         example: { de: "Das schadet ihm.", en: "That harms him." } },
-  { de: "nützen",     en: "to be useful to", example: { de: "Das nützt mir nichts.", en: "That's no use to me." } },
+  { de: "helfen",     en: "to help",         example: { de: "Er hilft mir.", en: "He helps me." },                       memory: "Help is extended to an outstretched hand — not grabbed from one." },
+  { de: "danken",     en: "to thank",        example: { de: "Ich danke dir.", en: "I thank you." },                      memory: "Gratitude is a gift sent to its recipient." },
+  { de: "gefallen",   en: "to please/like",  example: { de: "Es gefällt mir.", en: "I like it." },                       memory: "Something falls pleasantly onto your taste — it pleases to you." },
+  { de: "folgen",     en: "to follow",       example: { de: "Folg mir!", en: "Follow me!" },                             memory: "Following trails behind toward someone — you never get ahead of them." },
+  { de: "gehören",    en: "to belong to",    example: { de: "Das gehört mir.", en: "That belongs to me." },              memory: "Belonging always points to an owner." },
+  { de: "glauben",    en: "to believe",      example: { de: "Ich glaube ihm.", en: "I believe him." },                   memory: "Belief is directed toward a person, not fired at them." },
+  { de: "antworten",  en: "to answer",       example: { de: "Sie antwortet ihm.", en: "She answers him." },              memory: "An answer is sent back to the questioner — it travels toward them." },
+  { de: "vertrauen",  en: "to trust",        example: { de: "Ich vertraue dir.", en: "I trust you." },                   memory: "Trust builds gradually toward someone over time." },
+  { de: "zuhören",    en: "to listen to",    example: { de: "Hör mir zu!", en: "Listen to me!" },                        memory: "zu (toward) + hören (hear) — the Dativ is literally built into the word." },
+  { de: "empfehlen",  en: "to recommend",    example: { de: "Ich empfehle dir das.", en: "I recommend that to you." },   memory: "A recommendation is a gift given to someone for their benefit." },
+  { de: "schaden",    en: "to harm",         example: { de: "Das schadet ihm.", en: "That harms him." },                 memory: "Harm happens to a recipient — they're the one who receives it." },
+  { de: "nützen",     en: "to be useful to", example: { de: "Das nützt mir nichts.", en: "That's no use to me." },       memory: "Usefulness exists for someone's benefit — they're the recipient." },
 ];
 
 const DRIFT_CLASSES = ["verb-drift-a", "verb-drift-b", "verb-drift-c"] as const;
@@ -416,6 +417,39 @@ export function VerbCloudOverlay({ onClose }: Props) {
             </div>
           );
         })}
+
+        {/* ── Memory tip popup ── */}
+        {desktopFocused && (() => {
+          const verbs = desktopFocused.group === "akk" ? AKK_VERBS : DAT_VERBS;
+          const verb = verbs[desktopFocused.i];
+          const isGreen = desktopFocused.group === "akk";
+          return (
+            <div
+              className="absolute left-0 right-0 flex justify-center pointer-events-none"
+              style={{ top: "calc(50% + 118px)", zIndex: 25 }}
+            >
+              <div
+                key={`${desktopFocused.group}-${desktopFocused.i}`}
+                className="bg-white/95 rounded-2xl shadow-xl px-5 py-3.5 text-center max-w-[300px]"
+                style={{
+                  border: `1px solid hsl(var(${isGreen ? "--poster-green" : "--poster-purple"}) / 0.2)`,
+                  animation: "memory-tip-in 300ms cubic-bezier(0.22,1,0.36,1) both",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                <p
+                  className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
+                  style={{ color: `hsl(var(${isGreen ? "--poster-green" : "--poster-purple"}))`, opacity: 0.7 }}
+                >
+                  memory tip
+                </p>
+                <p className="text-[12px] text-poster-ink/65 leading-snug">
+                  {verb.memory}
+                </p>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* ── MOBILE: two scrollable columns ── */}
