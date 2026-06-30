@@ -85,6 +85,35 @@ function VerbIntroCard({ onDismiss }: { onDismiss: () => void }) {
             </div>
           </div>
 
+          {/* Semantic families */}
+          <div className="space-y-1.5">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-poster-ink/35">
+              Two Dativ families to spot
+            </p>
+            {[
+              {
+                label: "Communication",
+                verbs: ["antworten", "zuhören", "folgen", "widersprechen"],
+              },
+              {
+                label: "Feeling / state",
+                verbs: ["gefallen", "fehlen", "schmecken", "wehtun"],
+              },
+            ].map(({ label, verbs }) => (
+              <div key={label} className="flex items-start gap-2">
+                <span
+                  className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md text-white mt-0.5"
+                  style={{ background: "hsl(var(--poster-purple) / 0.5)" }}
+                >
+                  {label}
+                </span>
+                <span className="text-[11px] text-poster-ink/55 font-mono leading-snug">
+                  {verbs.join(" · ")}
+                </span>
+              </div>
+            ))}
+          </div>
+
           <p className="text-[11px] text-poster-ink/40 leading-snug">
             That phantom "to" is why Dativ verbs take{" "}
             <span className="font-semibold">mir · dir · ihm</span> — not mich · dich · ihn.
