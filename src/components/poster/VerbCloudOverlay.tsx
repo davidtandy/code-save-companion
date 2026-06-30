@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import cloudGreen from "@/assets/poster/cloud-green.svg";
 import cloudPurple from "@/assets/poster/cloud-purple.svg";
@@ -24,7 +24,7 @@ function VerbIntroCard({ onDismiss }: { onDismiss: () => void }) {
     <div
       className="absolute inset-0 flex items-center justify-center z-30 px-5"
       style={{ background: "rgba(214,234,248,0.55)", backdropFilter: "blur(3px)" }}
-      onClick={onDismiss}
+      onClick={(e) => { e.stopPropagation(); onDismiss(); }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -293,6 +293,16 @@ export function VerbCloudOverlay({ onClose }: Props) {
       >
         <X className="h-4 w-4" />
       </button>
+
+      {!showIntro && (
+        <button
+          className="absolute bottom-4 right-4 z-10 w-9 h-9 rounded-full bg-white/60 flex items-center justify-center text-poster-ink/50 hover:bg-white/90 hover:text-poster-ink/80 transition-colors"
+          onClick={(e) => { e.stopPropagation(); setShowIntro(true); }}
+          title="How verb cases work"
+        >
+          <Info className="h-4 w-4" />
+        </button>
+      )}
 
       {/* ── DESKTOP: sky layout ── */}
       <div
