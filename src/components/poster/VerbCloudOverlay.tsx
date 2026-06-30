@@ -147,33 +147,33 @@ type Verb = {
 };
 
 const AKK_VERBS: Verb[] = [
-  { de: "kaufen",   en: "to buy",     example: { de: "Ich kaufe einen Apfel.", en: "I'm buying an apple." },  memory: "Cash leaves your hand, goods land in yours — a direct swap." },
-  { de: "sehen",    en: "to see",     example: { de: "Er sieht den Film.", en: "He sees the film." },         memory: "Your gaze reaches out and touches what you see." },
-  { de: "kennen",   en: "to know",    example: { de: "Ich kenne ihn gut.", en: "I know him well." },          memory: "You hold a person in your mental grip — you know them." },
-  { de: "lieben",   en: "to love",    example: { de: "Sie liebt ihn.", en: "She loves him." },                memory: "Love wraps directly around its object." },
-  { de: "finden",   en: "to find",    example: { de: "Sie findet den Schlüssel.", en: "She finds the key." }, memory: "Finding = seizing something that was hiding from you." },
-  { de: "machen",   en: "to make/do", example: { de: "Er macht einen Fehler.", en: "He makes a mistake." },   memory: "You reach out and shape the world directly." },
-  { de: "brauchen", en: "to need",    example: { de: "Ich brauche einen Arzt.", en: "I need a doctor." },     memory: "Need pulls the object straight toward you." },
-  { de: "nehmen",   en: "to take",    example: { de: "Er nimmt den Bus.", en: "He takes the bus." },          memory: "Taking is the most direct action there is." },
-  { de: "fragen",   en: "to ask",     example: { de: "Sie fragt ihn.", en: "She asks him." },                 memory: "A question is an arrow fired straight at someone." },
-  { de: "lesen",    en: "to read",    example: { de: "Er liest einen Brief.", en: "He reads a letter." },     memory: "Your eyes devour the page directly." },
-  { de: "besuchen", en: "to visit",   example: { de: "Wir besuchen ihn.", en: "We visit him." },              memory: "You go directly to someone's door." },
-  { de: "haben",    en: "to have",    example: { de: "Ich habe einen Hund.", en: "I have a dog." },           memory: "Possession is the most direct relationship possible." },
+  { de: "kaufen",   en: "to buy",     example: { de: "Ich kaufe einen Apfel.", en: "I'm buying an apple." },  memory: "" },
+  { de: "sehen",    en: "to see",     example: { de: "Er sieht den Film.", en: "He sees the film." },         memory: "" },
+  { de: "kennen",   en: "to know",    example: { de: "Ich kenne ihn gut.", en: "I know him well." },          memory: "" },
+  { de: "lieben",   en: "to love",    example: { de: "Sie liebt ihn.", en: "She loves him." },                memory: "" },
+  { de: "finden",   en: "to find",    example: { de: "Sie findet den Schlüssel.", en: "She finds the key." }, memory: "" },
+  { de: "machen",   en: "to make/do", example: { de: "Er macht einen Fehler.", en: "He makes a mistake." },   memory: "" },
+  { de: "brauchen", en: "to need",    example: { de: "Ich brauche einen Arzt.", en: "I need a doctor." },     memory: "" },
+  { de: "nehmen",   en: "to take",    example: { de: "Er nimmt den Bus.", en: "He takes the bus." },          memory: "" },
+  { de: "fragen",   en: "to ask",     example: { de: "Sie fragt ihn.", en: "She asks him." },                 memory: "" },
+  { de: "lesen",    en: "to read",    example: { de: "Er liest einen Brief.", en: "He reads a letter." },     memory: "" },
+  { de: "besuchen", en: "to visit",   example: { de: "Wir besuchen ihn.", en: "We visit him." },              memory: "" },
+  { de: "haben",    en: "to have",    example: { de: "Ich habe einen Hund.", en: "I have a dog." },           memory: "" },
 ];
 
 const DAT_VERBS: Verb[] = [
-  { de: "helfen",     en: "to help",         example: { de: "Er hilft mir.", en: "He helps me." },                       memory: "Help is extended to an outstretched hand — not grabbed from one." },
-  { de: "danken",     en: "to thank",        example: { de: "Ich danke dir.", en: "I thank you." },                      memory: "Gratitude is a gift sent to its recipient." },
-  { de: "gefallen",   en: "to please/like",  example: { de: "Es gefällt mir.", en: "I like it." },                       memory: "Something falls pleasantly onto your taste — it pleases to you." },
-  { de: "folgen",     en: "to follow",       example: { de: "Folg mir!", en: "Follow me!" },                             memory: "Following trails behind toward someone — you never get ahead of them." },
-  { de: "gehören",    en: "to belong to",    example: { de: "Das gehört mir.", en: "That belongs to me." },              memory: "Belonging always points to an owner." },
-  { de: "glauben",    en: "to believe",      example: { de: "Ich glaube ihm.", en: "I believe him." },                   memory: "Belief is directed toward a person, not fired at them." },
-  { de: "antworten",  en: "to answer",       example: { de: "Sie antwortet ihm.", en: "She answers him." },              memory: "An answer is sent back to the questioner — it travels toward them." },
-  { de: "vertrauen",  en: "to trust",        example: { de: "Ich vertraue dir.", en: "I trust you." },                   memory: "Trust builds gradually toward someone over time." },
-  { de: "zuhören",    en: "to listen to",    example: { de: "Hör mir zu!", en: "Listen to me!" },                        memory: "zu (toward) + hören (hear) — the Dativ is literally built into the word." },
-  { de: "empfehlen",  en: "to recommend",    example: { de: "Ich empfehle dir das.", en: "I recommend that to you." },   memory: "A recommendation is a gift given to someone for their benefit." },
-  { de: "schaden",    en: "to harm",         example: { de: "Das schadet ihm.", en: "That harms him." },                 memory: "Harm happens to a recipient — they're the one who receives it." },
-  { de: "nützen",     en: "to be useful to", example: { de: "Das nützt mir nichts.", en: "That's no use to me." },       memory: "Usefulness exists for someone's benefit — they're the recipient." },
+  { de: "helfen",     en: "to help",         example: { de: "Er hilft mir.", en: "He helps me." },                       memory: "Picture a hand reaching out TO someone who's fallen. Help always goes to its recipient." },
+  { de: "danken",     en: "to thank",        example: { de: "Ich danke dir.", en: "I thank you." },                      memory: "A thank-you is an arrow that flies TO the person who helped you." },
+  { de: "gefallen",   en: "to please/like",  example: { de: "Es gefällt mir.", en: "I like it." },                       memory: "Ge-FÄLLT: something pleasant falls (fällt) ON you. The enjoyment lands on the recipient." },
+  { de: "folgen",     en: "to follow",       example: { de: "Folg mir!", en: "Follow me!" },                             memory: "A shadow trails its owner — always moving toward them, never getting ahead." },
+  { de: "gehören",    en: "to belong to",    example: { de: "Das gehört mir.", en: "That belongs to me." },              memory: "A key belongs TO its lock. Ownership always names the owner in Dativ." },
+  { de: "glauben",    en: "to believe",      example: { de: "Ich glaube ihm.", en: "I believe him." },                   memory: "Belief is a spotlight — you aim it at a person. Ich glaube ihm = I shine it on him." },
+  { de: "antworten",  en: "to answer",       example: { de: "Sie antwortet ihm.", en: "She answers him." },              memory: "An answer is a tennis ball returned TO the person who served." },
+  { de: "vertrauen",  en: "to trust",        example: { de: "Ich vertraue dir.", en: "I trust you." },                   memory: "Trust is a bridge you build TOWARD someone — it has to reach them." },
+  { de: "zuhören",    en: "to listen to",    example: { de: "Hör mir zu!", en: "Listen to me!" },                        memory: "ZU (toward) + HÖREN (hear) — the Dativ is literally baked into the word." },
+  { de: "empfehlen",  en: "to recommend",    example: { de: "Ich empfehle dir das.", en: "I recommend that to you." },   memory: "A waiter hands the menu TO the guest. Recommendations always go TO someone." },
+  { de: "schaden",    en: "to harm",         example: { de: "Das schadet ihm.", en: "That harms him." },                 memory: "Damage lands ON its victim — they receive it whether they want to or not." },
+  { de: "nützen",     en: "to be useful to", example: { de: "Das nützt mir nichts.", en: "That's no use to me." },       memory: "Usefulness is a gift — it only exists when someone receives it." },
 ];
 
 const DRIFT_CLASSES = ["verb-drift-a", "verb-drift-b", "verb-drift-c"] as const;
@@ -436,15 +436,26 @@ export function VerbCloudOverlay({ onClose }: Props) {
                   backdropFilter: "blur(8px)",
                 }}
               >
-                <p
-                  className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
-                  style={{ color: `hsl(var(${isGreen ? "--poster-green" : "--poster-purple"}))`, opacity: 0.7 }}
-                >
-                  memory tip
-                </p>
-                <p className="text-[12px] text-poster-ink/65 leading-snug">
-                  {verb.memory}
-                </p>
+                {isGreen ? (
+                  <p
+                    className="text-[11px] font-bold uppercase tracking-widest"
+                    style={{ color: `hsl(var(--poster-green))`, opacity: 0.6 }}
+                  >
+                    Akkusativ — default case
+                  </p>
+                ) : (
+                  <>
+                    <p
+                      className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
+                      style={{ color: `hsl(var(--poster-purple))`, opacity: 0.7 }}
+                    >
+                      Dativ memory tip
+                    </p>
+                    <p className="text-[12px] text-poster-ink/65 leading-snug">
+                      {verb.memory}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           );
