@@ -164,15 +164,15 @@ const AKK_VERBS: Verb[] = [
 const DAT_VERBS: Verb[] = [
   { de: "helfen",     en: "to help",         example: { de: "Er hilft mir.", en: "He helps me." },                       memory: "Picture a hand reaching out TO someone who's fallen. Help always goes to its recipient." },
   { de: "danken",     en: "to thank",        example: { de: "Ich danke dir.", en: "I thank you." },                      memory: "A thank-you is an arrow that flies TO the person who helped you." },
-  { de: "gefallen",   en: "to please/like",  example: { de: "Es gefällt mir.", en: "I like it." },                       memory: "Ge-FÄLLT: something pleasant falls (fällt) ON you. The enjoyment lands on the recipient." },
+  { de: "gefallen",   en: "to please/like",  example: { de: "Es gefällt mir.", en: "I like it." },                       memory: "Ge-FÄLLT: something pleasant falls TO your liking. The enjoyment comes TO you." },
   { de: "folgen",     en: "to follow",       example: { de: "Folg mir!", en: "Follow me!" },                             memory: "A shadow trails its owner — always moving toward them, never getting ahead." },
   { de: "gehören",    en: "to belong to",    example: { de: "Das gehört mir.", en: "That belongs to me." },              memory: "A key belongs TO its lock. Ownership always names the owner in Dativ." },
-  { de: "glauben",    en: "to believe",      example: { de: "Ich glaube ihm.", en: "I believe him." },                   memory: "Belief is a spotlight — you aim it at a person. Ich glaube ihm = I shine it on him." },
+  { de: "glauben",    en: "to believe",      example: { de: "Ich glaube ihm.", en: "I believe him." },                   memory: "Belief is a spotlight — you aim it at a person. Ich glaube ihm = I direct it TO him." },
   { de: "antworten",  en: "to answer",       example: { de: "Sie antwortet ihm.", en: "She answers him." },              memory: "An answer is a tennis ball returned TO the person who served." },
-  { de: "vertrauen",  en: "to trust",        example: { de: "Ich vertraue dir.", en: "I trust you." },                   memory: "Trust is a bridge you build TOWARD someone — it has to reach them." },
+  { de: "vertrauen",  en: "to trust",        example: { de: "Ich vertraue dir.", en: "I trust you." },                   memory: "Trust is a bridge you build TOWARD someone — it must reach them." },
   { de: "zuhören",    en: "to listen to",    example: { de: "Hör mir zu!", en: "Listen to me!" },                        memory: "ZU (toward) + HÖREN (hear) — the Dativ is literally baked into the word." },
   { de: "empfehlen",  en: "to recommend",    example: { de: "Ich empfehle dir das.", en: "I recommend that to you." },   memory: "A waiter hands the menu TO the guest. Recommendations always go TO someone." },
-  { de: "schaden",    en: "to harm",         example: { de: "Das schadet ihm.", en: "That harms him." },                 memory: "Damage lands ON its victim — they receive it whether they want to or not." },
+  { de: "schaden",    en: "to harm",         example: { de: "Das schadet ihm.", en: "That harms him." },                 memory: "Damage happens TO its victim — they receive it regardless." },
   { de: "nützen",     en: "to be useful to", example: { de: "Das nützt mir nichts.", en: "That's no use to me." },       memory: "Usefulness is a gift — it only exists when someone receives it." },
 ];
 
