@@ -19,8 +19,8 @@ function VerbIntroCard({ onDismiss }: { onDismiss: () => void }) {
     { label: "Perception",  verbs: ["sehen", "kennen", "lesen", "lieben"],     ex: "Er sieht sie." },
   ];
   const DAT_FAMILIES = [
-    { label: "Communication", verbs: ["antworten", "zuhören", "folgen", "glauben", "danken", "widersprechen", "vertrauen"], ex: "Er antwortet ihr." },
-    { label: "Feeling / state", verbs: ["gefallen", "fehlen", "schmecken", "wehtun", "schaden", "nützen", "passen"],        ex: "Es gefällt mir."  },
+    { label: "Communication", verbs: ["helfen", "antworten", "danken", "zuhören", "folgen", "glauben", "vertrauen", "empfehlen", "widersprechen", "befehlen", "schreiben"], ex: "Er antwortet ihr." },
+    { label: "Feeling / state", verbs: ["gefallen", "fehlen", "schmecken", "wehtun", "schaden", "nützen", "passen", "gelingen", "leidtun", "auffallen", "imponieren"],     ex: "Es gefällt mir."  },
   ];
 
   return (
