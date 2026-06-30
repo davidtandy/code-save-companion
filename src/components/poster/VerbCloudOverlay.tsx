@@ -14,11 +14,14 @@ function VerbIntroCard({ onDismiss }: { onDismiss: () => void }) {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  const MNEMONICS = [
-    ["helfen",  "help to you",    "Er hilft mir"],
-    ["glauben", "believe to you", "Ich glaube ihm"],
-    ["danken",  "thank to you",   "Ich danke dir"],
-  ] as const;
+  const AKK_FAMILIES = [
+    { label: "Action",      verbs: ["kaufen", "nehmen", "finden", "brauchen"], ex: "Ich kaufe ihn." },
+    { label: "Perception",  verbs: ["sehen", "kennen", "lesen", "lieben"],     ex: "Er sieht sie." },
+  ];
+  const DAT_FAMILIES = [
+    { label: "Communication", verbs: ["antworten", "zuhören", "folgen"],   ex: "Er antwortet ihr." },
+    { label: "Feeling / state", verbs: ["gefallen", "fehlen", "schmecken"], ex: "Es gefällt mir."  },
+  ];
 
   return (
     <div
@@ -33,73 +36,73 @@ function VerbIntroCard({ onDismiss }: { onDismiss: () => void }) {
           transform: visible ? "translateY(0) scale(1)" : "translateY(16px) scale(0.96)",
           transition: "opacity 380ms ease, transform 380ms cubic-bezier(0.22,1,0.36,1)",
         }}
-        className="w-full max-w-[340px] rounded-2xl overflow-hidden shadow-2xl bg-white"
+        className="w-full max-w-[400px] rounded-2xl overflow-y-auto shadow-2xl bg-white"
+        style={{ maxHeight: "90dvh" }}
       >
         {/* Sky header */}
         <div
           style={{ background: "linear-gradient(160deg, #c8e6f7 0%, #ddf0fb 60%, #eef7fd 100%)" }}
           className="relative px-6 pt-7 pb-5 text-center overflow-hidden"
         >
-          <div className="absolute top-3 left-4 text-2xl opacity-40 select-none pointer-events-none">☁</div>
-          <div className="absolute top-5 right-6 text-xl opacity-25 select-none pointer-events-none">☁</div>
-          <div className="absolute bottom-2 left-12 text-base opacity-20 select-none pointer-events-none">☁</div>
+          <div className="absolute top-2 left-3 text-5xl opacity-20 select-none pointer-events-none">☁</div>
+          <div className="absolute top-4 right-4 text-4xl opacity-15 select-none pointer-events-none">☁</div>
+          <div className="absolute bottom-1 left-10 text-3xl opacity-10 select-none pointer-events-none">☁</div>
           <p className="text-[11px] font-bold uppercase tracking-widest text-poster-purple/70 mb-1.5">verb grammar</p>
           <h2 className="font-display font-bold text-[22px] leading-tight text-poster-ink">
-            Verbs choose their case
+            Most verbs take Akkusativ
           </h2>
           <p className="text-[13px] text-poster-ink/55 mt-1.5 leading-snug">
-            It's baked into the verb — not the sentence.
+            A few demand Dativ — and it's worth knowing which.
           </p>
         </div>
 
         {/* Body */}
-        <div className="px-5 py-4 space-y-3.5">
-          <p className="text-[13px] text-poster-ink/75 leading-snug">
-            <span className="font-semibold text-poster-green">Akkusativ verbs</span> take a direct
-            object. <span className="font-semibold text-poster-purple">Dativ verbs</span> are
-            different — they secretly mean giving something <em>to</em> someone.
+        <div className="px-5 py-4 space-y-3">
+          <p className="text-[13px] text-poster-ink/70 leading-snug">
+            <span className="font-semibold text-poster-green">Akkusativ verbs</span> act directly
+            on their object. <span className="font-semibold text-poster-purple">Dativ verbs</span>{" "}
+            treat theirs as a recipient — something directed <em>toward</em> or <em>felt by</em> them.
           </p>
 
+          {/* Akkusativ families */}
           <div
-            className="rounded-xl px-4 py-3.5 space-y-2"
+            className="rounded-xl px-4 py-3 space-y-2"
+            style={{
+              background: "hsl(var(--poster-green) / 0.07)",
+              border: "1px solid hsl(var(--poster-green) / 0.2)",
+            }}
+          >
+            <p className="text-[11px] font-bold uppercase tracking-widest text-poster-green">
+              Akkusativ families
+            </p>
+            {AKK_FAMILIES.map(({ label, verbs, ex }) => (
+              <div key={label} className="flex items-start gap-2">
+                <span
+                  className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md text-white mt-0.5"
+                  style={{ background: "hsl(var(--poster-green) / 0.55)" }}
+                >
+                  {label}
+                </span>
+                <span className="text-[11px] text-poster-ink/55 font-mono leading-snug">
+                  {verbs.join(" · ")}
+                  <span className="text-poster-ink/30"> · <em>{ex}</em></span>
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Dativ families */}
+          <div
+            className="rounded-xl px-4 py-3 space-y-2"
             style={{
               background: "hsl(var(--poster-purple) / 0.07)",
               border: "1px solid hsl(var(--poster-purple) / 0.18)",
             }}
           >
             <p className="text-[11px] font-bold uppercase tracking-widest text-poster-purple">
-              The hidden "to" trick
+              Dativ families
             </p>
-            <p className="text-[12px] text-poster-ink/60 leading-snug">
-              Read Dativ verbs as if there's a "to" hidden in English:
-            </p>
-            <div className="space-y-1.5 text-[12px]">
-              {MNEMONICS.map(([de, mnemonic, ex]) => (
-                <div key={de} className="flex items-baseline gap-1.5 flex-wrap">
-                  <span className="font-bold text-poster-ink font-slab">{de}</span>
-                  <span className="text-poster-ink/30">→</span>
-                  <span className="text-poster-ink/60 italic">"{mnemonic}"</span>
-                  <span className="text-poster-ink/30 text-[10px]">· {ex}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Semantic families */}
-          <div className="space-y-1.5">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-poster-ink/35">
-              Two Dativ families to spot
-            </p>
-            {[
-              {
-                label: "Communication",
-                verbs: ["antworten", "zuhören", "folgen", "widersprechen"],
-              },
-              {
-                label: "Feeling / state",
-                verbs: ["gefallen", "fehlen", "schmecken", "wehtun"],
-              },
-            ].map(({ label, verbs }) => (
+            {DAT_FAMILIES.map(({ label, verbs, ex }) => (
               <div key={label} className="flex items-start gap-2">
                 <span
                   className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md text-white mt-0.5"
@@ -109,14 +112,16 @@ function VerbIntroCard({ onDismiss }: { onDismiss: () => void }) {
                 </span>
                 <span className="text-[11px] text-poster-ink/55 font-mono leading-snug">
                   {verbs.join(" · ")}
+                  <span className="text-poster-ink/30"> · <em>{ex}</em></span>
                 </span>
               </div>
             ))}
           </div>
 
           <p className="text-[11px] text-poster-ink/40 leading-snug">
-            That phantom "to" is why Dativ verbs take{" "}
-            <span className="font-semibold">mir · dir · ihm</span> — not mich · dich · ihn.
+            Spot the family → pick the pronoun:{" "}
+            <span className="font-semibold text-poster-green">ihn · sie · es</span> for Akkusativ,{" "}
+            <span className="font-semibold text-poster-purple">ihm · ihr · ihnen</span> for Dativ.
           </p>
         </div>
 
