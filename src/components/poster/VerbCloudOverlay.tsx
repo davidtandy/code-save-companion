@@ -59,9 +59,9 @@ function VerbIntroCard({ onDismiss }: { onDismiss: () => void }) {
         {/* Body */}
         <div className="px-5 py-4 space-y-3">
           <p className="text-[13px] text-poster-ink/70 leading-snug">
-            <span className="font-semibold text-poster-green">Akkusativ verbs</span> act directly
-            on their object. <span className="font-semibold text-poster-purple">Dativ verbs</span>{" "}
-            treat theirs as a recipient — something directed <em>toward</em> or <em>felt by</em> them.
+            <span className="font-semibold text-poster-green">Akkusativ is the default</span> — assume
+            it and you'll be right most of the time. There are only ~40 Dativ-only verbs in all of
+            German. Learn those, and everything else takes care of itself.
           </p>
 
           {/* Akkusativ families */}
@@ -119,9 +119,8 @@ function VerbIntroCard({ onDismiss }: { onDismiss: () => void }) {
           </div>
 
           <p className="text-[11px] text-poster-ink/40 leading-snug">
-            Spot the family → pick the pronoun:{" "}
-            <span className="font-semibold text-poster-green">ihn · sie · es</span> for Akkusativ,{" "}
-            <span className="font-semibold text-poster-purple">ihm · ihr · ihnen</span> for Dativ.
+            When in doubt → <span className="font-semibold text-poster-green">ihn · sie · es</span>.
+            Dativ exceptions → <span className="font-semibold text-poster-purple">ihm · ihr · ihnen</span>.
           </p>
         </div>
 
