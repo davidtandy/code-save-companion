@@ -36,7 +36,7 @@ function VerbIntroCard({ onDismiss }: { onDismiss: () => void }) {
           transform: visible ? "translateY(0) scale(1)" : "translateY(16px) scale(0.96)",
           transition: "opacity 380ms ease, transform 380ms cubic-bezier(0.22,1,0.36,1)",
         }}
-        className="w-full max-w-[400px] rounded-2xl overflow-y-auto shadow-2xl bg-white"
+        className="w-full max-w-[480px] rounded-2xl overflow-y-auto shadow-2xl bg-white"
         style={{ maxHeight: "90dvh" }}
       >
         {/* Sky header */}
