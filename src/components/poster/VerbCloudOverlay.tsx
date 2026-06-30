@@ -417,45 +417,37 @@ export function VerbCloudOverlay({ onClose }: Props) {
           );
         })}
 
-        {/* ── Memory tip popup ── */}
-        {desktopFocused && (() => {
-          const verbs = desktopFocused.group === "akk" ? AKK_VERBS : DAT_VERBS;
-          const verb = verbs[desktopFocused.i];
-          const isGreen = desktopFocused.group === "akk";
+        {/* ── Memory tip popup (Dativ only) ── */}
+        {desktopFocused?.group === "dat" && (() => {
+          const verb = DAT_VERBS[desktopFocused.i];
+          const parts = verb.memory.split(/\b(to)\b/gi);
           return (
             <div
               className="absolute left-0 right-0 flex justify-center pointer-events-none"
               style={{ top: "calc(50% + 118px)", zIndex: 25 }}
             >
               <div
-                key={`${desktopFocused.group}-${desktopFocused.i}`}
+                key={`dat-${desktopFocused.i}`}
                 className="bg-white/95 rounded-2xl shadow-xl px-5 py-3.5 text-center max-w-[300px]"
                 style={{
-                  border: `1px solid hsl(var(${isGreen ? "--poster-green" : "--poster-purple"}) / 0.2)`,
+                  border: "1px solid hsl(var(--poster-purple) / 0.2)",
                   animation: "memory-tip-in 300ms cubic-bezier(0.22,1,0.36,1) both",
                   backdropFilter: "blur(8px)",
                 }}
               >
-                {isGreen ? (
-                  <p
-                    className="text-[11px] font-bold uppercase tracking-widest"
-                    style={{ color: `hsl(var(--poster-green))`, opacity: 0.6 }}
-                  >
-                    Akkusativ — default case
-                  </p>
-                ) : (
-                  <>
-                    <p
-                      className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
-                      style={{ color: `hsl(var(--poster-purple))`, opacity: 0.7 }}
-                    >
-                      Dativ memory tip
-                    </p>
-                    <p className="text-[12px] text-poster-ink/65 leading-snug">
-                      {verb.memory}
-                    </p>
-                  </>
-                )}
+                <p
+                  className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
+                  style={{ color: "hsl(var(--poster-purple))", opacity: 0.7 }}
+                >
+                  Dativ memory tip
+                </p>
+                <p className="text-[12px] text-poster-ink/65 leading-snug">
+                  {parts.map((part, i) =>
+                    /^to$/i.test(part)
+                      ? <strong key={i} className="text-poster-purple">TO</strong>
+                      : part
+                  )}
+                </p>
               </div>
             </div>
           );
