@@ -85,7 +85,7 @@ function VerbIntroCard({ onDismiss }: { onDismiss: () => void }) {
                 </span>
                 <span className="text-[11px] text-poster-ink/55 font-mono leading-snug">
                   {verbs.join(" · ")}
-                  <span className="text-poster-ink/30"> · <em>{ex}</em></span>
+                  <span className="text-poster-ink/30" style={{ whiteSpace: "nowrap" }}> · <em>{ex}</em></span>
                 </span>
               </div>
             ))}
@@ -112,7 +112,7 @@ function VerbIntroCard({ onDismiss }: { onDismiss: () => void }) {
                 </span>
                 <span className="text-[11px] text-poster-ink/55 font-mono leading-snug">
                   {verbs.join(" · ")}
-                  <span className="text-poster-ink/30"> · <em>{ex}</em></span>
+                  <span className="text-poster-ink/30" style={{ whiteSpace: "nowrap" }}> · <em>{ex}</em></span>
                 </span>
               </div>
             ))}
