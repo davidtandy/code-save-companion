@@ -44,9 +44,9 @@ function VerbIntroCard({ onDismiss }: { onDismiss: () => void }) {
           style={{ background: "linear-gradient(160deg, #c8e6f7 0%, #ddf0fb 60%, #eef7fd 100%)" }}
           className="relative px-6 pt-7 pb-5 text-center overflow-hidden"
         >
-          <div className="absolute top-2 left-3 text-5xl opacity-20 select-none pointer-events-none">☁</div>
-          <div className="absolute top-4 right-4 text-4xl opacity-15 select-none pointer-events-none">☁</div>
-          <div className="absolute bottom-1 left-10 text-3xl opacity-10 select-none pointer-events-none">☁</div>
+          <div className="absolute top-1 left-2 text-8xl opacity-15 select-none pointer-events-none">☁</div>
+          <div className="absolute top-3 right-3 text-7xl opacity-10 select-none pointer-events-none">☁</div>
+          <div className="absolute bottom-0 left-8 text-6xl opacity-[0.07] select-none pointer-events-none">☁</div>
           <p className="text-[11px] font-bold uppercase tracking-widest text-poster-purple/70 mb-1.5">verb grammar</p>
           <h2 className="font-display font-bold text-[22px] leading-tight text-poster-ink">
             Most verbs take Akkusativ
