@@ -60,74 +60,69 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
       "fixed inset-0 z-[60] flex flex-col",
       isArticleStep ? "pointer-events-none" : "bg-poster-bg",
     )}>
-      {/* Header — always opaque and interactive */}
-      <div className="pointer-events-auto flex items-center px-4 py-3 bg-white/95 backdrop-blur-sm border-b border-poster-ink/10 shrink-0 gap-3">
-        <div className="flex items-center gap-2 shrink-0">
-          <img src={avatarSrc(identity.student_avatar)} alt="" className="w-8 h-8" draggable={false} />
+
+      {/* Slim header: name + score only */}
+      <div className="pointer-events-auto flex items-center justify-between px-4 py-2 bg-white/95 backdrop-blur-sm border-b border-poster-ink/10 shrink-0">
+        <div className="flex items-center gap-2">
+          <img src={avatarSrc(identity.student_avatar)} alt="" className="w-7 h-7" draggable={false} />
           <span className="font-semibold text-sm text-poster-ink">{identity.student_name}</span>
         </div>
-        <div className="flex-1 flex flex-col items-center text-center min-w-0 gap-0.5">
-          <div className="text-base font-bold text-poster-ink flex items-baseline flex-wrap gap-x-1 gap-y-0.5 justify-center leading-tight">
-            {q.pre && <span>{q.pre}</span>}
-            <span className="inline-flex items-baseline gap-1 border-2 border-poster-teal/50 rounded px-1.5 py-0.5 bg-poster-teal/5">
-              {q.boxedPre && <span>{q.boxedPre}</span>}
-              {q.step === "wword" ? (
-                <span>{q.answer}</span>
-              ) : (
-                <span className="flex flex-col items-center">
-                  <span className={cn(
-                    "border-b-2 min-w-[2rem] inline-block text-center text-sm leading-snug",
-                    locked ? "border-poster-teal text-poster-teal font-bold" : "border-poster-ink/30 text-poster-ink/30",
-                  )}>
-                    {locked ? q.answer : " "}
-                  </span>
-                  {!locked && (
-                    <span className="text-[9px] text-poster-ink/40 leading-none">
-                      {q.answer.toLowerCase().startsWith("ein") ? "a/an" : "the"}
-                    </span>
-                  )}
-                </span>
-              )}
-              <span>{q.boxedNoun}</span>
-            </span>
-            {q.post && <span>{q.post}</span>}
-          </div>
-          <div>
-            {q.step === "wword" ? (
-              <span className="text-[10px] uppercase tracking-widest text-poster-ink/35">
-                Tap the question word below
-              </span>
-            ) : (
-              <span className="text-[10px] uppercase tracking-widest text-poster-teal/70">
-                <span className="font-bold">{q.correctWWord}?</span> — {W_EN[q.correctWWord]} · now tap the article
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2">
           <div className="text-xs font-medium text-poster-ink/40">{idx + 1} / {session.questions.length}</div>
           <div className="px-3 py-1 rounded-full bg-poster-yellow text-white text-sm font-bold tabular-nums">{totalPoints} pts</div>
         </div>
       </div>
 
-      {/* Interaction area */}
-      {q.step === "wword" ? (
-        <div className="flex-1 flex flex-col justify-center min-h-0">
-          <div className="px-3 pb-4">
-            <QuestionWordSVGMap
-              zones={zones}
-              onWordClick={handleTap}
-              activeWord={!locked ? normalizedLocal : null}
-              correctWord={locked ? normalizedCorrect : null}
-              wrongWord={!locked ? normalizedWrong : null}
-              gap={6}
-              className="w-full"
-            />
+      {/* Wword step: sentence context + pulsing instruction + SVG map */}
+      {!isArticleStep && (
+        <>
+          {/* Sentence */}
+          <div className="shrink-0 px-4 pt-3 pb-1 text-center">
+            <div className="text-sm font-bold text-poster-ink flex items-baseline flex-wrap gap-x-1 gap-y-0.5 justify-center leading-tight">
+              {q.pre && <span>{q.pre}</span>}
+              <span className="inline-flex items-baseline gap-1 border-2 border-poster-teal/50 rounded px-1.5 py-0.5 bg-poster-teal/5">
+                {q.boxedPre && <span>{q.boxedPre}</span>}
+                <span>{q.answer}</span>
+                <span>{q.boxedNoun}</span>
+              </span>
+              {q.post && <span>{q.post}</span>}
+            </div>
           </div>
-        </div>
-      ) : (
-        // Transparent spacer — cheatsheet below is fully visible and tappable
-        <div className="flex-1" />
+
+          {/* Pulsing instruction */}
+          <div className="shrink-0 text-center pb-2">
+            <span className="quiz-instruction-pulse text-[11px] uppercase tracking-widest text-poster-ink/60 font-semibold">
+              Tap the question word below
+            </span>
+          </div>
+
+          {/* SVG map */}
+          <div className="flex-1 flex flex-col justify-center min-h-0">
+            <div className="px-3 pb-4">
+              <QuestionWordSVGMap
+                zones={zones}
+                onWordClick={handleTap}
+                activeWord={!locked ? normalizedLocal : null}
+                correctWord={locked ? normalizedCorrect : null}
+                wrongWord={!locked ? normalizedWrong : null}
+                gap={6}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Article step: pulsing instruction floats over cheatsheet, then transparent spacer */}
+      {isArticleStep && (
+        <>
+          <div className="pointer-events-none shrink-0 text-center py-2 bg-white/80 backdrop-blur-sm border-b border-poster-ink/5">
+            <span className="quiz-instruction-pulse text-[11px] uppercase tracking-widest text-poster-teal/80 font-semibold">
+              <span className="font-bold">{q.correctWWord}?</span> — {W_EN[q.correctWWord]} · now tap the article
+            </span>
+          </div>
+          <div className="flex-1" />
+        </>
       )}
 
       {/* Result */}
@@ -138,18 +133,12 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
           myAnswer.is_correct ? "border-poster-teal/20 bg-poster-teal/10" : "border-poster-red/20 bg-poster-red/10",
         )}>
           {myAnswer.is_correct ? (
-            <div className="text-poster-teal font-bold text-2xl tracking-tight">
-              ✓ +{myAnswer.points} pts
-            </div>
+            <div className="text-poster-teal font-bold text-2xl tracking-tight">✓ +{myAnswer.points} pts</div>
           ) : (
-            <div className="text-poster-red font-bold text-xl">
-              ✗ Try again…
-            </div>
+            <div className="text-poster-red font-bold text-xl">✗ Try again…</div>
           )}
           {locked && (
-            <div className="text-xs text-poster-ink/30 mt-1 font-medium">
-              Waiting for next question…
-            </div>
+            <div className="text-xs text-poster-ink/30 mt-1 font-medium">Waiting for next question…</div>
           )}
         </div>
       )}

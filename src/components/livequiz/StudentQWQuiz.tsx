@@ -47,31 +47,42 @@ export function StudentQWQuiz({ identity, session, myResponses, submitting, onAn
     onAnswer(word);
   }
 
-  // Normalize: SVG zones are uppercase, correctAnswer may vary
   const normalizedLocal   = localAnswer?.toUpperCase() ?? null;
   const normalizedCorrect = myAnswer?.is_correct ? q.correctAnswer?.toUpperCase() : null;
   const normalizedWrong   = (myAnswer && !myAnswer.is_correct && localAnswer) ? normalizedLocal : null;
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-poster-bg">
-      {/* Header: name + question prompt + counter/score */}
-      <div className="flex items-center px-4 py-3 bg-white/70 border-b border-poster-ink/10 shrink-0 gap-3">
-        <div className="flex items-center gap-2 shrink-0">
-          <img src={avatarSrc(identity.student_avatar)} alt="" className="w-8 h-8" draggable={false} />
+      {/* Slim header: name + score only */}
+      <div className="flex items-center justify-between px-4 py-2 bg-white/95 backdrop-blur-sm border-b border-poster-ink/10 shrink-0">
+        <div className="flex items-center gap-2">
+          <img src={avatarSrc(identity.student_avatar)} alt="" className="w-7 h-7" draggable={false} />
           <span className="font-semibold text-sm text-poster-ink">{identity.student_name}</span>
         </div>
-        <div className="flex-1 flex flex-col items-center text-center min-w-0">
-          <div className="text-[10px] uppercase tracking-widest text-poster-ink/35 leading-none">{subLabel}</div>
-          <div className="text-xl font-display font-bold text-poster-ink tracking-wide leading-tight">{prompt}</div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2">
           <div className="text-xs font-medium text-poster-ink/40">{idx + 1} / {session.questions.length}</div>
-          <div className="px-3 py-1 rounded-full bg-poster-yellow text-white text-sm font-bold tabular-nums">{totalPoints} pts</div>
+          <div className="px-3 py-1 rounded-full bg-poster-yellow text-white text-sm font-bold tabular-nums">
+            {totalPoints} pts
+          </div>
         </div>
       </div>
 
+      {/* Prompt word */}
+      <div className="shrink-0 text-center pt-3 pb-1 px-4">
+        <div className="text-4xl font-display font-bold text-poster-ink tracking-wide leading-none">
+          {prompt}
+        </div>
+      </div>
+
+      {/* Pulsing instruction */}
+      <div className="shrink-0 text-center pb-2">
+        <span className="quiz-instruction-pulse text-[11px] uppercase tracking-widest text-poster-ink/60 font-semibold">
+          {subLabel}
+        </span>
+      </div>
+
       {/* SVG click map */}
-      <div className="flex-1 flex flex-col justify-center px-3 pb-6 min-h-0">
+      <div className="flex-1 flex flex-col justify-center px-3 pb-4 min-h-0">
         <QuestionWordSVGMap
           zones={zones}
           onWordClick={handleTap}
@@ -90,18 +101,12 @@ export function StudentQWQuiz({ identity, session, myResponses, submitting, onAn
           myAnswer.is_correct ? "bg-poster-teal/10 border-poster-teal/20" : "bg-poster-red/10 border-poster-red/20",
         )}>
           {myAnswer.is_correct ? (
-            <div className="text-poster-teal font-bold text-2xl tracking-tight">
-              ✓ +{myAnswer.points} pts
-            </div>
+            <div className="text-poster-teal font-bold text-2xl tracking-tight">✓ +{myAnswer.points} pts</div>
           ) : (
-            <div className="text-poster-red font-bold text-xl">
-              ✗ Try again…
-            </div>
+            <div className="text-poster-red font-bold text-xl">✗ Try again…</div>
           )}
           {locked && (
-            <div className="text-xs text-poster-ink/30 mt-1 font-medium">
-              Waiting for next question…
-            </div>
+            <div className="text-xs text-poster-ink/30 mt-1 font-medium">Waiting for next question…</div>
           )}
         </div>
       )}
