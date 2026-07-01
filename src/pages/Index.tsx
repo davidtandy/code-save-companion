@@ -166,6 +166,25 @@ const Index = () => {
     return <StudentLobby onJoined={setStudentIdentity} />;
   }
 
+  // Render RotatePrompt outside <main isolate> so it's in the root stacking context
+  // and guaranteed to appear above all quiz overlays in student mode.
+  if (liveMode === "student") {
+    return (
+      <>
+        <RotatePrompt />
+        <Cheatsheet
+          liveTeacher={false}
+          liveTeacherPreview={false}
+          liveStudent={studentIdentity}
+          onLiveLeave={() => {
+            try { localStorage.removeItem("livequiz_student"); } catch {}
+            setStudentIdentity(null);
+          }}
+        />
+      </>
+    );
+  }
+
   return <Cheatsheet
     liveTeacher={liveMode === "teacher"}
     liveTeacherPreview={liveMode === "preview"}

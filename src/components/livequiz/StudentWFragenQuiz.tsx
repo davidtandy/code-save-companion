@@ -81,7 +81,7 @@ function WFragenWordPills({
     const len = animatingWord.length;
     let elapsed = 0;
     const tick = 45;
-    const duration = 580;
+    const duration = 1000;
     const id = setInterval(() => {
       elapsed += tick;
       if (elapsed >= duration) {
@@ -107,8 +107,8 @@ function WFragenWordPills({
               const isAnimating = animatingWord === word;
               const showGerman  = seenWords.has(word) && !peeking;
               const label = isAnimating && scrambleText
-                ? scrambleText
-                : (showGerman ? word : W_PILL_EN[word]);
+                ? (scrambleText === animatingWord ? scrambleText + "?" : scrambleText)
+                : (showGerman ? word + "?" : W_PILL_EN[word]);
               const isWrong  = normalizedWrong === word;
               const isActive = normalizedLocal === word && !isWrong;
 
@@ -118,7 +118,7 @@ function WFragenWordPills({
                   onClick={() => onTap(word)}
                   disabled={disabled}
                   className={cn(
-                    "flex-1 rounded-sm flex items-center justify-center text-white font-slab font-bold shadow-sm select-none text-base leading-tight px-2 transition-colors duration-150",
+                    "flex-1 rounded-sm flex items-center justify-center text-white font-slab font-bold shadow-sm select-none text-3xl px-2 transition-colors duration-150",
                     color === "green"  && "bg-poster-green",
                     color === "yellow" && "bg-poster-yellow",
                     color === "purple" && "bg-poster-purple",
@@ -210,6 +210,7 @@ function WFragenPostAnswer({
 
 export function StudentWFragenQuiz({ identity, session, myResponses, submitting, onAnswer }: Props) {
   const [localAnswer, setLocalAnswer] = useState<string | null>(null);
+  const [optimisticCorrect, setOptimisticCorrect] = useState(false);
   const [seenWords, setSeenWords] = useState<Set<string>>(new Set());
   const [animatingWord, setAnimatingWord] = useState<string | null>(null);
   const [showPostAnswer, setShowPostAnswer] = useState(false);
@@ -222,12 +223,15 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
   // Reset per question
   useEffect(() => {
     setLocalAnswer(null);
+    setOptimisticCorrect(false);
     setAnimatingWord(null);
     setShowPostAnswer(false);
   }, [idx]);
 
-  // When a correct answer lands: play flip animation, then reveal post-answer screen
-  const locked = !!myResponses.find((r) => r.question_index === idx)?.is_correct;
+  // When a correct answer lands: play scramble animation, then reveal post-answer screen.
+  // Use optimisticCorrect so the animation fires immediately on tap without a server round-trip.
+  const serverLocked = !!myResponses.find((r) => r.question_index === idx)?.is_correct;
+  const locked = serverLocked || optimisticCorrect;
 
   useEffect(() => {
     if (!locked || !q) {
@@ -237,15 +241,15 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
     }
     const word = q.correctWWord?.toUpperCase();
     setAnimatingWord(word ?? null);
-    // Update seenWords after scramble finishes (~580ms) so German word is locked in
+    // Update seenWords after 1000ms scramble ends
     const t1 = setTimeout(() => {
       if (word) setSeenWords(prev => { const s = new Set(prev); s.add(word); return s; });
-    }, 620);
-    // Transition to post-answer shortly after scramble settles
+    }, 1040);
+    // Transition to post-answer after scramble settles
     const t2 = setTimeout(() => {
       setAnimatingWord(null);
       setShowPostAnswer(true);
-    }, 950);
+    }, 1400);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [locked]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -270,13 +274,16 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
 
   function handleTap(answer: string) {
     if (locked || submitting) return;
-    setLocalAnswer(answer.toUpperCase());
+    const upper = answer.toUpperCase();
+    setLocalAnswer(upper);
+    if (upper === q.correctWWord?.toUpperCase()) setOptimisticCorrect(true);
     onAnswer(answer);
   }
 
   const normalizedLocal   = localAnswer?.toUpperCase() ?? null;
-  const normalizedCorrect = myAnswer?.is_correct ? q.correctWWord?.toUpperCase() : null;
-  const normalizedWrong   = (myAnswer && !myAnswer.is_correct && localAnswer) ? normalizedLocal : null;
+  const normalizedCorrect = locked ? q.correctWWord?.toUpperCase() : null;
+  // Optimistic wrong: show immediately on tap without waiting for server
+  const normalizedWrong   = (localAnswer && !optimisticCorrect && localAnswer !== q.correctWWord?.toUpperCase()) ? localAnswer : null;
 
   return (
     <div className={cn(
