@@ -79,24 +79,18 @@ export function StudentQWQuiz({ identity, session, myResponses, submitting, onAn
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-poster-bg">
-      {/* Slim header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-white/95 backdrop-blur-sm border-b border-poster-ink/10 shrink-0">
-        <div className="flex items-center gap-2">
+      {/* Header: name | prompt | counter+score */}
+      <div className="flex items-center px-4 py-2 bg-white/95 backdrop-blur-sm border-b border-poster-ink/10 shrink-0 gap-3">
+        <div className="flex items-center gap-2 shrink-0">
           <img src={avatarSrc(identity.student_avatar)} alt="" className="w-7 h-7" draggable={false} />
           <span className="font-semibold text-sm text-poster-ink">{identity.student_name}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="text-xs font-medium text-poster-ink/40">{idx + 1} / {session.questions.length}</div>
-          <div className="px-3 py-1 rounded-full bg-poster-yellow text-white text-sm font-bold tabular-nums">
-            {totalPoints} pts
-          </div>
+        <div className="flex-1 text-center min-w-0">
+          <div className="text-xl font-display font-bold text-poster-ink tracking-wide leading-tight">{prompt}</div>
         </div>
-      </div>
-
-      {/* Prompt word */}
-      <div className="shrink-0 text-center pt-3 pb-2 px-4">
-        <div className="text-4xl font-display font-bold text-poster-ink tracking-wide leading-none">
-          {prompt}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="text-xs font-medium text-poster-ink/40">{idx + 1} / {session.questions.length}</div>
+          <div className="px-3 py-1 rounded-full bg-poster-yellow text-white text-sm font-bold tabular-nums">{totalPoints} pts</div>
         </div>
       </div>
 

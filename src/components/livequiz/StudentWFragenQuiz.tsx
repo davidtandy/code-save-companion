@@ -90,33 +90,39 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
       isArticleStep ? "pointer-events-none" : "bg-poster-bg",
     )}>
 
-      {/* Slim header */}
-      <div className="pointer-events-auto flex items-center justify-between px-4 py-2 bg-white/95 backdrop-blur-sm border-b border-poster-ink/10 shrink-0">
-        <div className="flex items-center gap-2">
+      {/* Header: name | sentence | counter+score */}
+      <div className="pointer-events-auto flex items-center px-4 py-2 bg-white/95 backdrop-blur-sm border-b border-poster-ink/10 shrink-0 gap-3">
+        <div className="flex items-center gap-2 shrink-0">
           <img src={avatarSrc(identity.student_avatar)} alt="" className="w-7 h-7" draggable={false} />
           <span className="font-semibold text-sm text-poster-ink">{identity.student_name}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex-1 flex items-baseline flex-wrap gap-x-1 gap-y-0.5 justify-center min-w-0 text-sm font-bold text-poster-ink leading-tight">
+          {q.pre && <span>{q.pre}</span>}
+          <span className="inline-flex items-baseline gap-1 border-2 border-poster-teal/50 rounded px-1.5 py-0.5 bg-poster-teal/5">
+            {q.boxedPre && <span>{q.boxedPre}</span>}
+            {isArticleStep ? (
+              <span className={cn(
+                "border-b-2 min-w-[1.5rem] inline-block text-center leading-snug",
+                locked ? "border-poster-teal text-poster-teal" : "border-poster-ink/30 text-poster-ink/30",
+              )}>
+                {locked ? q.answer : "   "}
+              </span>
+            ) : (
+              <span>{q.answer}</span>
+            )}
+            <span>{q.boxedNoun}</span>
+          </span>
+          {q.post && <span>{q.post}</span>}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
           <div className="text-xs font-medium text-poster-ink/40">{idx + 1} / {session.questions.length}</div>
           <div className="px-3 py-1 rounded-full bg-poster-yellow text-white text-sm font-bold tabular-nums">{totalPoints} pts</div>
         </div>
       </div>
 
-      {/* Wword step: sentence + SVG map */}
+      {/* Wword step: SVG map */}
       {!isArticleStep && (
         <>
-          <div className="shrink-0 px-4 pt-3 pb-2 text-center">
-            <div className="text-sm font-bold text-poster-ink flex items-baseline flex-wrap gap-x-1 gap-y-0.5 justify-center leading-tight">
-              {q.pre && <span>{q.pre}</span>}
-              <span className="inline-flex items-baseline gap-1 border-2 border-poster-teal/50 rounded px-1.5 py-0.5 bg-poster-teal/5">
-                {q.boxedPre && <span>{q.boxedPre}</span>}
-                <span>{q.answer}</span>
-                <span>{q.boxedNoun}</span>
-              </span>
-              {q.post && <span>{q.post}</span>}
-            </div>
-          </div>
-
           <div className="flex-1 flex flex-col justify-center min-h-0">
             <div className="px-3 pb-4">
               <QuestionWordSVGMap
