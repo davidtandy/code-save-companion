@@ -7,9 +7,22 @@ import type { LiveSession } from "./LiveQuizProvider";
 import type { WFragenQuestion } from "@/components/poster/quiz/quizData";
 import { QuestionWordSVGMap, loadZones } from "@/components/poster/QuestionWordSVGMap";
 
+/** Set to true to restore the original SVG icon map for the wword step. */
+const USE_SVG_MAP = false;
+
 const W_EN: Record<string, string> = {
-  WER: "who", WEN: "whom", WEM: "to whom", WO: "where", WOHIN: "where to",
+  WER: "who", WEN: "whom", WEM: "to whom", WO: "where", WOHIN: "where to", WANN: "when",
 };
+
+const W_PILL_EN: Record<string, string> = {
+  WER: "who?", WEN: "whom?", WEM: "to whom?", WO: "where?", WOHIN: "where to?", WANN: "when?",
+};
+
+const WWORD_COLUMNS = [
+  { color: "green",  words: ["WEN", "WOHIN"] },
+  { color: "yellow", words: ["WER"] },
+  { color: "purple", words: ["WEM", "WO", "WANN"] },
+] as const;
 
 type Props = {
   identity: StudentIdentity;
@@ -45,12 +58,85 @@ function QuizFlash({ text, idx }: { text: string; idx: number }) {
   );
 }
 
+/** 3-column pill grid for selecting a W-question word. */
+function WFragenWordPills({
+  onTap, seenWords, locked, submitting, normalizedLocal, normalizedCorrect, normalizedWrong,
+}: {
+  onTap: (word: string) => void;
+  seenWords: Set<string>;
+  locked: boolean;
+  submitting: boolean;
+  normalizedLocal: string | null;
+  normalizedCorrect: string | null;
+  normalizedWrong: string | null;
+}) {
+  const [peeking, setPeeking] = useState(false);
+
+  return (
+    <div className="flex-1 flex flex-col px-4 py-5 gap-3 min-h-0 relative">
+      <div className="flex gap-3 flex-1 min-h-0">
+        {WWORD_COLUMNS.map(({ color, words }) => (
+          <div key={color} className="flex flex-col gap-3 flex-1 min-h-0">
+            {words.map((word) => {
+              const showGerman = seenWords.has(word) && !peeking;
+              const label = showGerman ? word : W_PILL_EN[word];
+              const isCorrect = normalizedCorrect === word;
+              const isWrong   = normalizedWrong === word;
+              const isActive  = normalizedLocal === word && !isCorrect && !isWrong;
+
+              return (
+                <button
+                  key={word}
+                  onClick={() => onTap(word)}
+                  disabled={locked || submitting}
+                  className={cn(
+                    "flex-1 rounded-sm flex items-center justify-center text-white font-slab font-bold shadow-sm select-none text-base leading-tight px-2 transition-all duration-150",
+                    color === "green"  && "bg-poster-green",
+                    color === "yellow" && "bg-poster-yellow",
+                    color === "purple" && "bg-poster-purple",
+                    isCorrect && "ring-4 ring-poster-teal ring-offset-2 scale-105",
+                    isWrong   && "opacity-40 scale-95",
+                    isActive  && "opacity-70 scale-95",
+                    locked && !isCorrect && "opacity-50",
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Press-and-hold to peek at English labels */}
+      <button
+        className={cn(
+          "absolute bottom-3 right-3 px-3 py-1.5 rounded-full text-xs font-medium select-none transition-colors",
+          peeking
+            ? "bg-poster-ink/20 text-poster-ink/80"
+            : "bg-poster-ink/10 text-poster-ink/40",
+        )}
+        onPointerDown={() => setPeeking(true)}
+        onPointerUp={() => setPeeking(false)}
+        onPointerLeave={() => setPeeking(false)}
+        onPointerCancel={() => setPeeking(false)}
+      >
+        {peeking ? "showing English" : "hold to peek"}
+      </button>
+    </div>
+  );
+}
+
 export function StudentWFragenQuiz({ identity, session, myResponses, submitting, onAnswer }: Props) {
   const [localAnswer, setLocalAnswer] = useState<string | null>(null);
+  const [seenWords, setSeenWords] = useState<Set<string>>(new Set());
   const zones = loadZones();
 
   const idx = session.current_question_index;
   const q = session.questions?.[idx] as WFragenQuestion | undefined;
+
+  // Reset local answer each time question advances
+  useEffect(() => { setLocalAnswer(null); }, [idx]);
 
   const totalPoints = myResponses
     .filter((r) => r.question_index >= 0)
@@ -74,7 +160,12 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
 
   function handleTap(answer: string) {
     if (locked || submitting) return;
-    setLocalAnswer(answer.toUpperCase());
+    const upper = answer.toUpperCase();
+    setLocalAnswer(upper);
+    // Mark wword as seen so it flips to German on next appearance
+    if (!isArticleStep) {
+      setSeenWords(prev => { const s = new Set(prev); s.add(upper); return s; });
+    }
     onAnswer(answer);
   }
 
@@ -105,7 +196,7 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
                 "border-b-2 min-w-[1.5rem] inline-block text-center leading-snug",
                 locked ? "border-poster-teal text-poster-teal" : "border-poster-ink/30 text-poster-ink/30",
               )}>
-                {locked ? q.answer : "   "}
+                {locked ? q.answer : "   "}
               </span>
             ) : (
               <span>{q.answer}</span>
@@ -120,9 +211,9 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
         </div>
       </div>
 
-      {/* Wword step: SVG map */}
+      {/* Wword step: pill grid or SVG map */}
       {!isArticleStep && (
-        <>
+        USE_SVG_MAP ? (
           <div className="flex-1 flex flex-col justify-center min-h-0">
             <div className="px-3 pb-4">
               <QuestionWordSVGMap
@@ -136,7 +227,17 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
               />
             </div>
           </div>
-        </>
+        ) : (
+          <WFragenWordPills
+            onTap={handleTap}
+            seenWords={seenWords}
+            locked={locked}
+            submitting={submitting}
+            normalizedLocal={!locked ? normalizedLocal : null}
+            normalizedCorrect={locked ? normalizedCorrect : null}
+            normalizedWrong={!locked ? normalizedWrong : null}
+          />
+        )
       )}
 
       {/* Article step: transparent spacer so cheatsheet shows through */}
