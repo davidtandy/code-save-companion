@@ -510,7 +510,7 @@ export function TeacherPanel() {
                   answeredThisQ={answeredThisQ}
                   participantCount={participants.size}
                 />
-              : session?.game_mode === "wfragen"
+              : session?.game_mode === "wfragen" && activeQ?.kind === "wfragen"
               ? <TeacherWFragenDisplay
                   q={activeQ}
                   questionIndex={session.current_question_index}
