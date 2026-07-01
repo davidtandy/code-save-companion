@@ -6,8 +6,6 @@ import type { StudentIdentity } from "./StudentLobby";
 import type { LiveSession } from "./LiveQuizProvider";
 import type { WFragenQuestion } from "@/components/poster/quiz/quizData";
 import { QuestionWordSVGMap, loadZones } from "@/components/poster/QuestionWordSVGMap";
-import { LivePillBoard } from "./LivePillBoard";
-import type { QuizQuestion } from "@/components/poster/quiz/quizData";
 
 const W_EN: Record<string, string> = {
   WER: "who", WEN: "whom", WEM: "to whom", WO: "where", WOHIN: "where to",
@@ -35,11 +33,6 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
   const myAnswer = myResponses.find((r) => r.question_index === idx);
   const locked = !!myAnswer?.is_correct;
 
-  const startedAt = session.question_started_at
-    ? new Date(session.question_started_at).getTime()
-    : Date.now();
-  const timerMaxMs = (session.timer_max_seconds || 30) * 1000;
-
   if (!q) {
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-poster-bg text-poster-ink/50">
@@ -47,6 +40,8 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
       </div>
     );
   }
+
+  const isArticleStep = q.step === "article";
 
   function handleTap(answer: string) {
     if (locked || submitting) return;
@@ -58,17 +53,15 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
   const normalizedCorrect = myAnswer?.is_correct ? q.correctWWord?.toUpperCase() : null;
   const normalizedWrong   = (myAnswer && !myAnswer.is_correct && localAnswer) ? normalizedLocal : null;
 
-  // Adapt WFragenQuestion to QuizQuestion shape so LivePillBoard can derive pills
-  const articleQ: QuizQuestion = {
-    kind: "article",
-    prep: { token: q.correctWWord + String(q.sentenceIndex), case: q.caseKey },
-    correctPillId: q.correctPillId,
-  };
-
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-poster-bg">
-      {/* Header: name + sentence/step label + counter/score */}
-      <div className="flex items-center px-4 py-3 bg-white/70 border-b border-poster-ink/10 shrink-0 gap-3">
+    // Article step: transparent + pointer-events-none so the cheatsheet shows through and is tappable.
+    // Wword step: opaque background covers the cheatsheet.
+    <div className={cn(
+      "fixed inset-0 z-[60] flex flex-col",
+      isArticleStep ? "pointer-events-none" : "bg-poster-bg",
+    )}>
+      {/* Header — always opaque and interactive */}
+      <div className="pointer-events-auto flex items-center px-4 py-3 bg-white/95 backdrop-blur-sm border-b border-poster-ink/10 shrink-0 gap-3">
         <div className="flex items-center gap-2 shrink-0">
           <img src={avatarSrc(identity.student_avatar)} alt="" className="w-8 h-8" draggable={false} />
           <span className="font-semibold text-sm text-poster-ink">{identity.student_name}</span>
@@ -118,8 +111,8 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
       </div>
 
       {/* Interaction area */}
-      <div className="flex-1 flex flex-col justify-center min-h-0">
-        {q.step === "wword" ? (
+      {q.step === "wword" ? (
+        <div className="flex-1 flex flex-col justify-center min-h-0">
           <div className="px-3 pb-4">
             <QuestionWordSVGMap
               zones={zones}
@@ -131,24 +124,18 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
               className="w-full"
             />
           </div>
-        ) : (
-          /* Article step — LivePillBoard */
-          <LivePillBoard
-            question={articleQ}
-            questionStartedAt={startedAt}
-            timerMaxMs={timerMaxMs}
-            locked={locked}
-            lockedPillId={myAnswer?.answer ?? null}
-            onAnswer={handleTap}
-          />
-        )}
-      </div>
+        </div>
+      ) : (
+        // Transparent spacer — cheatsheet below is fully visible and tappable
+        <div className="flex-1" />
+      )}
 
       {/* Result */}
       {myAnswer && (
         <div className={cn(
-          "px-6 py-4 text-center border-t shrink-0 transition-all duration-500",
-          myAnswer.is_correct ? "bg-poster-teal/10 border-poster-teal/20" : "bg-poster-red/10 border-poster-red/20",
+          "pointer-events-auto px-6 py-4 text-center border-t shrink-0 transition-all duration-500",
+          isArticleStep ? "bg-white/95 backdrop-blur-sm" : "",
+          myAnswer.is_correct ? "border-poster-teal/20 bg-poster-teal/10" : "border-poster-red/20 bg-poster-red/10",
         )}>
           {myAnswer.is_correct ? (
             <div className="text-poster-teal font-bold text-2xl tracking-tight">

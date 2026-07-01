@@ -238,9 +238,10 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
       />
     );
   }
-  /* ── W-Fragen word step: full-screen question-word icon picker (no poster pill
-   * involved). Its article step, below, taps real poster pills like Article Quiz. */
-  if (session.phase === "active" && session.game_mode === "wfragen" && q?.step === "wword") {
+  /* ── W-Fragen: header always rendered by StudentWFragenQuiz.
+   * Wword step: opaque overlay with SVG icon map.
+   * Article step: transparent overlay — header persists, cheatsheet shows through and is tappable. */
+  if (session.phase === "active" && session.game_mode === "wfragen") {
     return (
       <StudentWFragenQuiz
         identity={identity}
