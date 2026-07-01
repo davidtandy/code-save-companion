@@ -73,7 +73,7 @@ function WFragenWordPills({
   const [peeking, setPeeking] = useState(false);
 
   return (
-    <div className="flex-1 flex flex-col px-4 py-5 gap-3 min-h-0 relative">
+    <div className="flex-1 flex flex-col px-4 pt-4 pb-2 gap-2 min-h-0">
       <div className="flex gap-3 flex-1 min-h-0">
         {WWORD_COLUMNS.map(({ color, words }) => (
           <div key={color} className="flex flex-col gap-3 flex-1 min-h-0">
@@ -109,20 +109,22 @@ function WFragenWordPills({
       </div>
 
       {/* Press-and-hold to peek at English labels */}
-      <button
-        className={cn(
-          "absolute bottom-3 right-3 px-3 py-1.5 rounded-full text-xs font-medium select-none transition-colors",
-          peeking
-            ? "bg-poster-ink/20 text-poster-ink/80"
-            : "bg-poster-ink/10 text-poster-ink/40",
-        )}
-        onPointerDown={() => setPeeking(true)}
-        onPointerUp={() => setPeeking(false)}
-        onPointerLeave={() => setPeeking(false)}
-        onPointerCancel={() => setPeeking(false)}
-      >
-        {peeking ? "showing English" : "hold to peek"}
-      </button>
+      <div className="flex justify-end shrink-0 pt-1">
+        <button
+          className={cn(
+            "px-3 py-1.5 rounded-full text-xs font-medium select-none transition-colors",
+            peeking
+              ? "bg-poster-ink/20 text-poster-ink/80"
+              : "bg-poster-ink/10 text-poster-ink/40",
+          )}
+          onPointerDown={() => setPeeking(true)}
+          onPointerUp={() => setPeeking(false)}
+          onPointerLeave={() => setPeeking(false)}
+          onPointerCancel={() => setPeeking(false)}
+        >
+          {peeking ? "showing English" : "hold to peek"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -162,8 +164,8 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
     if (locked || submitting) return;
     const upper = answer.toUpperCase();
     setLocalAnswer(upper);
-    // Mark wword as seen so it flips to German on next appearance
-    if (!isArticleStep) {
+    // Only flip to German after a correct answer
+    if (!isArticleStep && upper === q.correctWWord?.toUpperCase()) {
       setSeenWords(prev => { const s = new Set(prev); s.add(upper); return s; });
     }
     onAnswer(answer);
