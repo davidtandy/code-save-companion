@@ -27,6 +27,7 @@ export type Database = {
           student_avatar: string
           student_id: string
           student_name: string
+          updated_at: string
         }
         Insert: {
           answer: string
@@ -37,9 +38,10 @@ export type Database = {
           question_index: number
           response_ms?: number
           session_id: string
-          student_avatar: string
+          student_avatar?: string
           student_id: string
           student_name: string
+          updated_at?: string
         }
         Update: {
           answer?: string
@@ -53,6 +55,7 @@ export type Database = {
           student_avatar?: string
           student_id?: string
           student_name?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -82,7 +85,7 @@ export type Database = {
           code: string
           created_at?: string
           current_question_index?: number
-          game_mode: string
+          game_mode?: string
           host_token?: string
           id?: string
           phase?: string
