@@ -260,19 +260,17 @@ export function TeacherPanel() {
       : sampleQuestions(20);
   }
 
-  async function resetSession() {
+  async function endSession() {
     if (!session) return;
     try {
-      const row = await resetFn({
-        data: { sessionId: session.id, hostToken: session.host_token, questions: freshQuestions() },
-      });
-      setSession(row as Session);
-      setResponses([]);
-    } catch (e: any) {
-      alert(e?.message ?? "Reset failed");
-    } finally {
-      setConfirmReset(false);
-    }
+      await updateFn({ data: { sessionId: session.id, hostToken: session.host_token, patch: { phase: "ended" } } });
+    } catch {}
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    setSession(null);
+    setResponses([]);
+    setConfirmReset(false);
+    setShowBreakdown(false);
+    setShowCelebration(false);
   }
 
   async function playAgain() {
@@ -385,13 +383,13 @@ export function TeacherPanel() {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [showBreakdown, session?.current_question_index]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Flash a winner celebration overlay for 2.2s when breakdown starts
+  // Flash winner celebration + confetti when the game ends (results phase)
   useEffect(() => {
-    if (!showBreakdown || !sessionLeaderboard.length) { setShowCelebration(false); return; }
+    if (session?.phase !== "results" || !sessionLeaderboard.length) return;
     setShowCelebration(true);
-    const t = setTimeout(() => setShowCelebration(false), 2200);
+    const t = setTimeout(() => setShowCelebration(false), 4000);
     return () => clearTimeout(t);
-  }, [showBreakdown, session?.current_question_index]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [session?.phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scatter avatars onto their chosen pills after breakdown
   useEffect(() => {
@@ -466,7 +464,7 @@ export function TeacherPanel() {
       {showCelebration && sessionLeaderboard.length > 0 && (
         <>
           <div className="fixed inset-0 z-[210] bg-poster-ink/85 backdrop-blur-md flex flex-col items-center justify-center gap-5 animate-in fade-in duration-300">
-            <div className="text-[11px] uppercase tracking-[0.3em] text-white/50 font-semibold">Current Leader</div>
+            <div className="text-[11px] uppercase tracking-[0.3em] text-white/50 font-semibold">Winner!</div>
             <img src={avatarSrc(sessionLeaderboard[0].avatar)} alt="" className="w-28 h-28" draggable={false} />
             <div className="text-6xl font-display font-bold text-white tracking-tight">{sessionLeaderboard[0].name}</div>
             <div className="text-4xl font-bold text-poster-yellow tabular-nums">{sessionLeaderboard[0].points} pts</div>
@@ -656,7 +654,7 @@ export function TeacherPanel() {
                   {confirmReset ? (
                     <div className="flex gap-2 w-full">
                       <button onClick={() => setConfirmReset(false)} className="flex-1 py-2 text-xs text-poster-ink/40 rounded-full border border-poster-ink/10 hover:bg-poster-ink/5 transition-colors">Cancel</button>
-                      <button onClick={resetSession} className="flex-1 py-2 text-xs text-red-500 font-semibold rounded-full border border-red-200 hover:bg-red-50 transition-colors">Yes, reset</button>
+                      <button onClick={endSession} className="flex-1 py-2 text-xs text-red-500 font-semibold rounded-full border border-red-200 hover:bg-red-50 transition-colors">Yes, reset</button>
                     </div>
                   ) : (
                     <button
@@ -731,7 +729,7 @@ export function TeacherPanel() {
                   {confirmReset ? (
                     <div className="flex gap-2 w-full">
                       <button onClick={() => setConfirmReset(false)} className="flex-1 py-2 text-xs text-poster-ink/40 rounded-full border border-poster-ink/10 hover:bg-poster-ink/5 transition-colors">Cancel</button>
-                      <button onClick={resetSession} className="flex-1 py-2 text-xs text-red-500 font-semibold rounded-full border border-red-200 hover:bg-red-50 transition-colors">Yes, reset</button>
+                      <button onClick={endSession} className="flex-1 py-2 text-xs text-red-500 font-semibold rounded-full border border-red-200 hover:bg-red-50 transition-colors">Yes, reset</button>
                     </div>
                   ) : (
                     <button

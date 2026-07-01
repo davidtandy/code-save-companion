@@ -9,6 +9,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { submitResponse } from "@/lib/livequiz.functions";
 import { StudentQWQuiz } from "./StudentQWQuiz";
 import { StudentWFragenQuiz } from "./StudentWFragenQuiz";
+import { Confetti } from "./Confetti";
 
 const W_EN: Record<string, string> = {
   WER: "who", WEN: "whom", WEM: "to whom", WO: "where", WOHIN: "where to",
@@ -19,10 +20,12 @@ type Props = {
   onLeave: () => void;
   /** Called with a function when we want to intercept cheatsheet pill taps, null to release. */
   onSetSubmit: (fn: ((pillId: string) => void) | null) => void;
+  /** Trigger the poster ripple flourish; returns ms until phase 1+2 complete. */
+  onRipple?: (pillId: string, result: "correct" | "wrong") => number;
   quizFillMode?: boolean;
 };
 
-export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMode = false }: Props) {
+export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, onRipple, quizFillMode = false }: Props) {
   const { session, myResponses, leaderboard, joinedCount, loading } = useLiveQuiz();
   const [submitting, setSubmitting] = useState(false);
   const submitFn = useServerFn(submitResponse);
@@ -87,8 +90,15 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
           answer: pillId,
         },
       });
-      // Show popup immediately from server result — no poll-cycle delay
-      showPopup(result.is_correct, result.points || 0, `${idx}:${pillId}`);
+      // For article/pronoun questions: trigger the poster ripple first, then show popup after it completes.
+      // For other modes (QW, WFragen) the specialized UI handles feedback; show popup immediately.
+      const isArticleKind = q?.kind === "article" || q?.kind === "pronoun";
+      if (isArticleKind && onRipple) {
+        const delayMs = onRipple(pillId, result.is_correct ? "correct" : "wrong");
+        setTimeout(() => showPopup(result.is_correct, result.points || 0, `${idx}:${pillId}`), delayMs);
+      } else {
+        showPopup(result.is_correct, result.points || 0, `${idx}:${pillId}`);
+      }
     } catch {
       setOptimisticAnswer(null);
       if (isSecondAttempt) setSecondAttemptDone(false);
@@ -176,8 +186,10 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
 
   /* ── Results / ended: leaderboard overlay ── */
   if (session.phase === "results" || session.phase === "ended") {
+    const isLeader = leaderboard.length > 0 && leaderboard[0].id === identity.student_id;
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center p-6 bg-poster-bg overflow-y-auto">
+        {isLeader && <Confetti />}
         <div className="w-full max-w-sm space-y-8 pt-4">
           <div className="text-center">
             <div className="text-4xl font-bold text-poster-ink tracking-tight">Ergebnisse</div>

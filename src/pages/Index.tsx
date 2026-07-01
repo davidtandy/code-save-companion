@@ -1006,6 +1006,7 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
         identity={liveStudent}
         onLeave={onLiveLeave ?? (() => {})}
         onSetSubmit={(fn) => { liveQuizSubmit.current = fn; }}
+        onRipple={(id, result) => posterRef.current?.rippleFrom(id, result) ?? 0}
         quizFillMode={quizFillMode}
       />
     )}

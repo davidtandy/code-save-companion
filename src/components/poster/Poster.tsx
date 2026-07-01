@@ -72,7 +72,7 @@ export type PosterHandle = {
   /** Fire a staggered inset-ring burst on the given pill ids (L→R wave). */
   fireLinkBurst: (ids: readonly string[], staggerMs: number) => void;
   /** Radial ripple from a clicked pill, then double-flash all pills. */
-  rippleFrom: (sourceId: string, result: "correct" | "wrong") => void;
+  rippleFrom: (sourceId: string, result: "correct" | "wrong") => number;
 };
 
 type Props = {
@@ -557,6 +557,9 @@ export const Poster = forwardRef<PosterHandle, Props>(
         tasks.forEach(({ el, delay }) => {
           setTimeout(() => el.classList.remove(cls, clsFlash), T_OUT + delay);
         });
+
+        // Return ms until phase 1+2 are complete (when caller can show a follow-up UI)
+        return allDone + HOLD_MS + SNAP_MS * 2 + FADE_MS * 2;
       },
     }));
 

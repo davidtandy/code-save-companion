@@ -7,7 +7,6 @@ import type { LiveSession } from "./LiveQuizProvider";
 import type { WFragenQuestion } from "@/components/poster/quiz/quizData";
 import { QuestionWordSVGMap, loadZones } from "@/components/poster/QuestionWordSVGMap";
 import { useLiveQuiz } from "./LiveQuizProvider";
-import { Confetti } from "./Confetti";
 
 /** Set to true to restore the original SVG icon map for the wword step. */
 const USE_SVG_MAP = false;
@@ -180,10 +179,8 @@ function WFragenPostAnswer({
   leaderboard: { id: string; name: string; avatar: string; points: number }[];
   studentId: string;
 }) {
-  const isLeader = leaderboard.length > 0 && leaderboard[0].id === studentId;
   return (
     <div className="flex-1 flex min-h-0 overflow-hidden">
-      {isLeader && <Confetti />}
       <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center border-r border-poster-ink/10">
         <div className="text-5xl font-display font-bold text-poster-ink tracking-wide">{correctWord}</div>
         <div className="text-3xl font-bold text-poster-teal tabular-nums">+{points} pts</div>
