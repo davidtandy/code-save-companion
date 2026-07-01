@@ -446,11 +446,11 @@ export function TeacherPanel() {
       )}
 
       {/* ── QR — fixed top-right, doubles on hover ── */}
-      <div className="fixed top-9 right-4 z-[150] flex flex-col items-end gap-1.5 transition-transform duration-200 origin-top-right hover:scale-[2]">
-        <div className="bg-white rounded-xl p-2 shadow-lg border border-poster-ink/10">
-          <QRCode value={joinUrl} size={96} level="M" />
+      <div className="fixed top-4 right-0 z-[150] flex flex-col items-end gap-1 transition-transform duration-200 origin-top-right hover:scale-[2.5]">
+        <div className="bg-white rounded-l-xl p-1.5 shadow-lg border border-r-0 border-poster-ink/10">
+          <QRCode value={joinUrl} size={52} level="M" />
         </div>
-        <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold">
+        <div className="text-[9px] uppercase tracking-widest text-poster-ink/50 font-semibold pr-1">
           Scan to join!
         </div>
       </div>

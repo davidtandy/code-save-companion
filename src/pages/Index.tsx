@@ -40,6 +40,8 @@ import { TeacherPanel } from "@/components/livequiz/TeacherPanel";
 import { TeacherPreviewPanel } from "@/components/livequiz/TeacherPreviewPanel";
 import { LiveStudentOverlay } from "@/components/livequiz/LiveStudentOverlay";
 import { LiveQuizProvider } from "@/components/livequiz/LiveQuizProvider";
+import { getLatestActiveSession, joinSession } from "@/lib/livequiz.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { RotatePrompt } from "@/components/RotatePrompt";
 import { StepRepeatBackground } from "@/components/StepRepeatBackground";
 
@@ -110,6 +112,55 @@ const Index = () => {
     } catch {}
     return null;
   });
+  // true when identity was restored from localStorage and needs verification + rejoin
+  const [verifying, setVerifying] = useState(() => {
+    if (getLiveMode() !== "student") return false;
+    try {
+      const raw = localStorage.getItem("livequiz_student");
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      return !!(parsed?.session_id && parsed?.student_id);
+    } catch {}
+    return false;
+  });
+
+  const lookupFn = useServerFn(getLatestActiveSession);
+  const joinFn   = useServerFn(joinSession);
+
+  useEffect(() => {
+    if (!verifying || !studentIdentity) { setVerifying(false); return; }
+    let cancelled = false;
+    async function verify() {
+      try {
+        const latest = await lookupFn({});
+        if (cancelled) return;
+        if (!latest || latest.id !== studentIdentity.session_id) {
+          // Session is stale or a new one started — drop back to lobby
+          try { localStorage.removeItem("livequiz_student"); } catch {}
+          setStudentIdentity(null);
+        } else {
+          // Re-register so the student appears in the teacher's joined count
+          await joinFn({ data: {
+            sessionId: studentIdentity.session_id,
+            studentId: studentIdentity.student_id,
+            studentName: studentIdentity.student_name,
+            studentAvatar: studentIdentity.student_avatar,
+          }});
+        }
+      } catch {}
+      if (!cancelled) setVerifying(false);
+    }
+    verify();
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (liveMode === "student" && verifying) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-poster-bg">
+        <div className="text-poster-ink/40 text-sm font-medium">Rejoining…</div>
+      </div>
+    );
+  }
 
   if (liveMode === "student" && !studentIdentity) {
     return <StudentLobby onJoined={setStudentIdentity} />;
