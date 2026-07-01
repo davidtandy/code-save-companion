@@ -745,9 +745,9 @@ const Cheatsheet = ({ liveTeacher, liveTeacherPreview, liveStudent, onLiveLeave 
       const margin = quizFillMode ? 4 : 16;
       const fitW = quizFillMode ? POSTER_W - 56 : POSTER_W;
       const fitH = POSTER_H;
-      // quizFill: width-only — top/bottom clip freely, pills fill the screen
+      // quizFill: fit both dimensions so all pills stay on screen without panning
       const s = quizFillMode
-        ? Math.min(1, (stage.width - margin * 2) / fitW)
+        ? Math.min(1, (stage.width - margin * 2) / fitW, (stage.height - margin * 2) / (POSTER_H - 120))
         : Math.min(1, (stage.width - margin * 2) / fitW, (stage.height - margin * 2) / fitH);
       setFitScale(s);
     };
