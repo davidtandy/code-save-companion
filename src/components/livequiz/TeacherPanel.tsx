@@ -154,7 +154,6 @@ export function TeacherPanel() {
   const [wfragenLevel, setWfragenLevel] = useState<"easy" | "hard">("easy");
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [confirmReset, setConfirmReset] = useState(false);
   const [panelExpanded, setPanelExpanded] = useState(false);
   const [statsExpanded, setStatsExpanded] = useState(false);
   const [prevRankOrder, setPrevRankOrder] = useState<string[]>([]);
@@ -262,13 +261,13 @@ export function TeacherPanel() {
 
   async function endSession() {
     if (!session) return;
+    if (!window.confirm("End this session? Students will be disconnected.")) return;
     try {
       await updateFn({ data: { sessionId: session.id, hostToken: session.host_token, patch: { phase: "ended" } } });
     } catch {}
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
     setSession(null);
     setResponses([]);
-    setConfirmReset(false);
     setShowBreakdown(false);
     setShowCelebration(false);
   }
@@ -651,19 +650,12 @@ export function TeacherPanel() {
                     <SkipForward size={16} />
                     {session.current_question_index + 1 >= session.questions.length ? "End → Results" : "Next Question →"}
                   </button>
-                  {confirmReset ? (
-                    <div className="flex gap-2 w-full">
-                      <button onClick={() => setConfirmReset(false)} className="flex-1 py-2 text-xs text-poster-ink/40 rounded-full border border-poster-ink/10 hover:bg-poster-ink/5 transition-colors">Cancel</button>
-                      <button onClick={endSession} className="flex-1 py-2 text-xs text-red-500 font-semibold rounded-full border border-red-200 hover:bg-red-50 transition-colors">Yes, reset</button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmReset(true)}
-                      className="w-full py-2 text-xs text-poster-ink/30 hover:text-poster-ink/60 flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <RotateCcw size={13} /> End / Reset
-                    </button>
-                  )}
+                  <button
+                    onClick={endSession}
+                    className="w-full py-2 text-xs text-poster-ink/30 hover:text-poster-ink/60 flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <RotateCcw size={13} /> End / Reset
+                  </button>
                 </>
               ) : (
                 <>
@@ -726,19 +718,12 @@ export function TeacherPanel() {
                     </>
                   )}
 
-                  {confirmReset ? (
-                    <div className="flex gap-2 w-full">
-                      <button onClick={() => setConfirmReset(false)} className="flex-1 py-2 text-xs text-poster-ink/40 rounded-full border border-poster-ink/10 hover:bg-poster-ink/5 transition-colors">Cancel</button>
-                      <button onClick={endSession} className="flex-1 py-2 text-xs text-red-500 font-semibold rounded-full border border-red-200 hover:bg-red-50 transition-colors">Yes, reset</button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmReset(true)}
-                      className="w-full py-2 text-xs text-poster-ink/30 hover:text-poster-ink/60 flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <RotateCcw size={13} /> End / Reset
-                    </button>
-                  )}
+                  <button
+                    onClick={endSession}
+                    className="w-full py-2 text-xs text-poster-ink/30 hover:text-poster-ink/60 flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <RotateCcw size={13} /> End / Reset
+                  </button>
                 </>
               )}
             </div>
