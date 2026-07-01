@@ -6,6 +6,7 @@ import type { StudentIdentity } from "./StudentLobby";
 import type { LiveSession } from "./LiveQuizProvider";
 import type { WFragenQuestion } from "@/components/poster/quiz/quizData";
 import { QuestionWordSVGMap, loadZones } from "@/components/poster/QuestionWordSVGMap";
+import { useLiveQuiz } from "./LiveQuizProvider";
 
 /** Set to true to restore the original SVG icon map for the wword step. */
 const USE_SVG_MAP = false;
@@ -60,14 +61,12 @@ function QuizFlash({ text, idx }: { text: string; idx: number }) {
 
 /** 3-column pill grid for selecting a W-question word. */
 function WFragenWordPills({
-  onTap, seenWords, locked, submitting, normalizedLocal, normalizedCorrect, normalizedWrong,
+  onTap, seenWords, submitting, normalizedLocal, normalizedWrong,
 }: {
   onTap: (word: string) => void;
   seenWords: Set<string>;
-  locked: boolean;
   submitting: boolean;
   normalizedLocal: string | null;
-  normalizedCorrect: string | null;
   normalizedWrong: string | null;
 }) {
   const [peeking, setPeeking] = useState(false);
@@ -80,24 +79,21 @@ function WFragenWordPills({
             {words.map((word) => {
               const showGerman = seenWords.has(word) && !peeking;
               const label = showGerman ? word : W_PILL_EN[word];
-              const isCorrect = normalizedCorrect === word;
-              const isWrong   = normalizedWrong === word;
-              const isActive  = normalizedLocal === word && !isCorrect && !isWrong;
+              const isWrong  = normalizedWrong === word;
+              const isActive = normalizedLocal === word && !isWrong;
 
               return (
                 <button
                   key={word}
                   onClick={() => onTap(word)}
-                  disabled={locked || submitting}
+                  disabled={submitting}
                   className={cn(
                     "flex-1 rounded-sm flex items-center justify-center text-white font-slab font-bold shadow-sm select-none text-base leading-tight px-2 transition-all duration-150",
                     color === "green"  && "bg-poster-green",
                     color === "yellow" && "bg-poster-yellow",
                     color === "purple" && "bg-poster-purple",
-                    isCorrect && "ring-4 ring-poster-teal ring-offset-2 scale-105",
-                    isWrong   && "opacity-40 scale-95",
-                    isActive  && "opacity-70 scale-95",
-                    locked && !isCorrect && "opacity-50",
+                    isWrong  && "opacity-40 scale-95",
+                    isActive && "opacity-70 scale-95",
                   )}
                 >
                   {label}
@@ -129,9 +125,63 @@ function WFragenWordPills({
   );
 }
 
+/** Shown after a correct wword answer: answer + points on left, live rankings on right. */
+function WFragenPostAnswer({
+  correctWord, points, leaderboard, studentId,
+}: {
+  correctWord: string;
+  points: number;
+  leaderboard: { id: string; name: string; avatar: string; points: number }[];
+  studentId: string;
+}) {
+  return (
+    <div className="flex-1 flex min-h-0 overflow-hidden">
+      {/* Left: answer + points */}
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center border-r border-poster-ink/10">
+        <div className="text-5xl font-display font-bold text-poster-ink tracking-wide">{correctWord}</div>
+        <div className="text-3xl font-bold text-poster-teal tabular-nums">+{points} pts</div>
+        <div className="text-xs text-poster-ink/35 font-medium uppercase tracking-widest mt-1">
+          Waiting for next question…
+        </div>
+      </div>
+      {/* Right: live rankings */}
+      <div className="flex-1 flex flex-col gap-1.5 px-3 py-4 overflow-y-auto">
+        {leaderboard.map((entry, i) => (
+          <div
+            key={entry.id}
+            className={cn(
+              "flex items-center gap-2 px-2.5 py-1.5 rounded-full shrink-0",
+              i === 0
+                ? "bg-poster-yellow text-white"
+                : entry.id === studentId
+                ? "bg-poster-teal/15 ring-1 ring-poster-teal/40"
+                : "bg-white/60",
+            )}
+          >
+            <span className={cn(
+              "text-xs font-bold w-4 text-center tabular-nums shrink-0",
+              i === 0 ? "text-white" : "text-poster-ink/30",
+            )}>{i + 1}</span>
+            <img src={avatarSrc(entry.avatar)} alt="" className="w-5 h-5 shrink-0" draggable={false} />
+            <span className={cn(
+              "flex-1 text-xs font-semibold truncate",
+              i === 0 ? "text-white" : "text-poster-ink",
+            )}>{entry.name}</span>
+            <span className={cn(
+              "text-xs font-bold tabular-nums shrink-0",
+              i === 0 ? "text-white" : "text-poster-ink",
+            )}>{entry.points}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function StudentWFragenQuiz({ identity, session, myResponses, submitting, onAnswer }: Props) {
   const [localAnswer, setLocalAnswer] = useState<string | null>(null);
   const [seenWords, setSeenWords] = useState<Set<string>>(new Set());
+  const { leaderboard } = useLiveQuiz();
   const zones = loadZones();
 
   const idx = session.current_question_index;
@@ -213,17 +263,25 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
         </div>
       </div>
 
-      {/* Wword step: pill grid or SVG map */}
+      {/* Wword step body */}
       {!isArticleStep && (
-        USE_SVG_MAP ? (
+        locked ? (
+          // Post-answer: answer + points on left, live rankings on right
+          <WFragenPostAnswer
+            correctWord={normalizedCorrect ?? ""}
+            points={myAnswer?.points ?? 0}
+            leaderboard={leaderboard}
+            studentId={identity.student_id}
+          />
+        ) : USE_SVG_MAP ? (
           <div className="flex-1 flex flex-col justify-center min-h-0">
             <div className="px-3 pb-4">
               <QuestionWordSVGMap
                 zones={zones}
                 onWordClick={handleTap}
-                activeWord={!locked ? normalizedLocal : null}
-                correctWord={locked ? normalizedCorrect : null}
-                wrongWord={!locked ? normalizedWrong : null}
+                activeWord={normalizedLocal}
+                correctWord={null}
+                wrongWord={normalizedWrong}
                 gap={6}
                 className="w-full"
               />
@@ -233,11 +291,9 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
           <WFragenWordPills
             onTap={handleTap}
             seenWords={seenWords}
-            locked={locked}
             submitting={submitting}
-            normalizedLocal={!locked ? normalizedLocal : null}
-            normalizedCorrect={locked ? normalizedCorrect : null}
-            normalizedWrong={!locked ? normalizedWrong : null}
+            normalizedLocal={normalizedLocal}
+            normalizedWrong={normalizedWrong}
           />
         )
       )}
@@ -245,8 +301,8 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
       {/* Article step: transparent spacer so cheatsheet shows through */}
       {isArticleStep && <div className="flex-1" />}
 
-      {/* Result */}
-      {myAnswer && (
+      {/* Result bar: wword wrong attempt, or article step result */}
+      {myAnswer && (isArticleStep || !locked) && (
         <div className={cn(
           "pointer-events-auto px-6 py-4 text-center border-t shrink-0 transition-all duration-500",
           isArticleStep ? "bg-white/95 backdrop-blur-sm" : "",
@@ -257,7 +313,7 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
           ) : (
             <div className="text-poster-red font-bold text-xl">✗ Try again…</div>
           )}
-          {locked && (
+          {locked && isArticleStep && (
             <div className="text-xs text-poster-ink/30 mt-1 font-medium">Waiting for next question…</div>
           )}
         </div>

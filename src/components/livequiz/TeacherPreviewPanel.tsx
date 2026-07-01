@@ -213,11 +213,8 @@ export function TeacherPreviewPanel() {
 
   return (
     <>
-      {/* ── QR — fixed top-left ── */}
-      <div className="fixed top-9 left-4 z-[150] flex flex-col items-start gap-1.5 transition-transform duration-200 origin-top-left hover:scale-[2]">
-        <div className="text-[10px] uppercase tracking-widest text-poster-ink/50 font-semibold">
-          Scan to join!
-        </div>
+      {/* ── QR — fixed top-right ── */}
+      <div className="fixed top-9 right-4 z-[150] flex flex-col items-end gap-1.5 transition-transform duration-200 origin-top-right hover:scale-[2]">
         <div className="bg-white rounded-xl p-2 shadow-lg border border-poster-ink/10">
           <QRCode value={joinUrl || "preview"} size={96} level="M" />
         </div>
