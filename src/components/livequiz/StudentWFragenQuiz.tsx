@@ -42,7 +42,7 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
 
   if (!q) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-poster-bg text-poster-ink/50">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-poster-bg text-poster-ink/50">
         Waiting for next question…
       </div>
     );
@@ -66,69 +66,61 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-poster-bg">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white/70 border-b border-poster-ink/10 shrink-0">
-        <div className="flex items-center gap-2">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-poster-bg">
+      {/* Header: name + sentence/step label + counter/score */}
+      <div className="flex items-center px-4 py-3 bg-white/70 border-b border-poster-ink/10 shrink-0 gap-3">
+        <div className="flex items-center gap-2 shrink-0">
           <img src={avatarSrc(identity.student_avatar)} alt="" className="w-8 h-8" draggable={false} />
           <span className="font-semibold text-sm text-poster-ink">{identity.student_name}</span>
         </div>
-        <div className="text-xs font-medium text-poster-ink/40">
-          {idx + 1} / {session.questions.length}
-        </div>
-        <div className="px-3 py-1 rounded-full bg-poster-yellow text-white text-sm font-bold tabular-nums">
-          {totalPoints} pts
-        </div>
-      </div>
-
-      {/* Sentence */}
-      <div className="px-5 pt-5 pb-2 shrink-0">
-        <div className="text-lg font-bold text-poster-ink flex items-baseline flex-wrap gap-x-1.5 gap-y-1 justify-center">
-          {q.pre && <span>{q.pre}</span>}
-          <span className="inline-flex items-baseline gap-1.5 border-2 border-poster-teal/50 rounded px-2 py-0.5 bg-poster-teal/5">
-            {q.boxedPre && <span>{q.boxedPre}</span>}
-            {q.step === "wword" ? (
-              // Word step doesn't test the article — just show it plainly so the sentence reads naturally.
-              <span>{q.answer}</span>
-            ) : (
-              <span className="flex flex-col items-center">
-                <span className={cn(
-                  "border-b-2 min-w-[2rem] inline-block text-center text-sm leading-snug",
-                  locked ? "border-poster-teal text-poster-teal font-bold" : "border-poster-ink/30 text-poster-ink/30",
-                )}>
-                  {locked ? q.answer : " "}
-                </span>
-                {!locked && (
-                  <span className="text-[9px] text-poster-ink/40 leading-none">
-                    {q.answer.toLowerCase().startsWith("ein") ? "a/an" : "the"}
+        <div className="flex-1 flex flex-col items-center text-center min-w-0 gap-0.5">
+          <div className="text-base font-bold text-poster-ink flex items-baseline flex-wrap gap-x-1 gap-y-0.5 justify-center leading-tight">
+            {q.pre && <span>{q.pre}</span>}
+            <span className="inline-flex items-baseline gap-1 border-2 border-poster-teal/50 rounded px-1.5 py-0.5 bg-poster-teal/5">
+              {q.boxedPre && <span>{q.boxedPre}</span>}
+              {q.step === "wword" ? (
+                <span>{q.answer}</span>
+              ) : (
+                <span className="flex flex-col items-center">
+                  <span className={cn(
+                    "border-b-2 min-w-[2rem] inline-block text-center text-sm leading-snug",
+                    locked ? "border-poster-teal text-poster-teal font-bold" : "border-poster-ink/30 text-poster-ink/30",
+                  )}>
+                    {locked ? q.answer : " "}
                   </span>
-                )}
+                  {!locked && (
+                    <span className="text-[9px] text-poster-ink/40 leading-none">
+                      {q.answer.toLowerCase().startsWith("ein") ? "a/an" : "the"}
+                    </span>
+                  )}
+                </span>
+              )}
+              <span>{q.boxedNoun}</span>
+            </span>
+            {q.post && <span>{q.post}</span>}
+          </div>
+          <div>
+            {q.step === "wword" ? (
+              <span className="text-[10px] uppercase tracking-widest text-poster-ink/35">
+                Tap the question word below
+              </span>
+            ) : (
+              <span className="text-[10px] uppercase tracking-widest text-poster-teal/70">
+                <span className="font-bold">{q.correctWWord}?</span> — {W_EN[q.correctWWord]} · now tap the article
               </span>
             )}
-            <span>{q.boxedNoun}</span>
-          </span>
-          {q.post && <span>{q.post}</span>}
+          </div>
         </div>
-
-        {/* Step label */}
-        <div className="text-center mt-2">
-          {q.step === "wword" ? (
-            <span className="text-[11px] uppercase tracking-widest text-poster-ink/35">
-              Tap the question word below
-            </span>
-          ) : (
-            <span className="text-[11px] uppercase tracking-widest text-poster-teal/70">
-              <span className="font-bold">{q.correctWWord}?</span> — {W_EN[q.correctWWord]} · now tap the article
-            </span>
-          )}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="text-xs font-medium text-poster-ink/40">{idx + 1} / {session.questions.length}</div>
+          <div className="px-3 py-1 rounded-full bg-poster-yellow text-white text-sm font-bold tabular-nums">{totalPoints} pts</div>
         </div>
       </div>
 
       {/* Interaction area */}
       <div className="flex-1 flex flex-col justify-center min-h-0">
         {q.step === "wword" ? (
-          /* SVG click map — no cheatsheet involved on this step, so size up to use the space */
-          <div className="px-3 pb-4 scale-125 sm:scale-150 origin-center">
+          <div className="px-3 pb-4">
             <QuestionWordSVGMap
               zones={zones}
               onWordClick={handleTap}

@@ -31,7 +31,7 @@ export function StudentQWQuiz({ identity, session, myResponses, submitting, onAn
 
   if (!q) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-poster-bg text-poster-ink/50">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-poster-bg text-poster-ink/50">
         Waiting for next question…
       </div>
     );
@@ -53,33 +53,25 @@ export function StudentQWQuiz({ identity, session, myResponses, submitting, onAn
   const normalizedWrong   = (myAnswer && !myAnswer.is_correct && localAnswer) ? normalizedLocal : null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-poster-bg">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white/70 border-b border-poster-ink/10 shrink-0">
-        <div className="flex items-center gap-2">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-poster-bg">
+      {/* Header: name + question prompt + counter/score */}
+      <div className="flex items-center px-4 py-3 bg-white/70 border-b border-poster-ink/10 shrink-0 gap-3">
+        <div className="flex items-center gap-2 shrink-0">
           <img src={avatarSrc(identity.student_avatar)} alt="" className="w-8 h-8" draggable={false} />
           <span className="font-semibold text-sm text-poster-ink">{identity.student_name}</span>
         </div>
-        <div className="text-xs font-medium text-poster-ink/40">
-          {idx + 1} / {session.questions.length}
+        <div className="flex-1 flex flex-col items-center text-center min-w-0">
+          <div className="text-[10px] uppercase tracking-widest text-poster-ink/35 leading-none">{subLabel}</div>
+          <div className="text-xl font-display font-bold text-poster-ink tracking-wide leading-tight">{prompt}</div>
         </div>
-        <div className="px-3 py-1 rounded-full bg-poster-yellow text-white text-sm font-bold tabular-nums">
-          {totalPoints} pts
-        </div>
-      </div>
-
-      {/* Prompt */}
-      <div className="flex flex-col items-center justify-center px-5 pt-8 pb-4 gap-2 shrink-0">
-        <div className="text-[11px] uppercase tracking-widest text-poster-ink/35">
-          {subLabel}
-        </div>
-        <div className="text-5xl font-display font-bold text-poster-ink tracking-wide">
-          {prompt}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="text-xs font-medium text-poster-ink/40">{idx + 1} / {session.questions.length}</div>
+          <div className="px-3 py-1 rounded-full bg-poster-yellow text-white text-sm font-bold tabular-nums">{totalPoints} pts</div>
         </div>
       </div>
 
-      {/* SVG click map — fills remaining space; no cheatsheet involved, so size up */}
-      <div className="flex-1 flex flex-col justify-center px-3 pb-6 min-h-0 scale-125 sm:scale-150 origin-center">
+      {/* SVG click map */}
+      <div className="flex-1 flex flex-col justify-center px-3 pb-6 min-h-0">
         <QuestionWordSVGMap
           zones={zones}
           onWordClick={handleTap}
