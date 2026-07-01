@@ -113,6 +113,7 @@ import { TeacherQWDisplay } from "./TeacherQWDisplay";
 import { TeacherWFragenDisplay } from "./TeacherWFragenDisplay";
 import { QuestionWordSVGMap, loadZones } from "@/components/poster/QuestionWordSVGMap";
 import { Play, SkipForward, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
+import { Confetti } from "./Confetti";
 import { useServerFn } from "@tanstack/react-start";
 import {
   createLiveSession,
@@ -152,6 +153,7 @@ export function TeacherPanel() {
   const [selectedGame, setSelectedGame] = useState<"article" | "question-words" | "wfragen">("article");
   const [wfragenLevel, setWfragenLevel] = useState<"easy" | "hard">("easy");
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [panelExpanded, setPanelExpanded] = useState(false);
   const [statsExpanded, setStatsExpanded] = useState(false);
@@ -172,7 +174,14 @@ export function TeacherPanel() {
       const { id, hostToken } = JSON.parse(raw);
       if (!id || !hostToken) return;
       getTeacherFn({ data: { sessionId: id, hostToken } }).then((row) => {
-        if (row && (row as any).phase !== "ended") setSession(row as Session);
+        if (row && (row as any).phase !== "ended") {
+          setSession(row as Session);
+          // Sync selectedGame so Play Again generates matching questions
+          const gm = (row as any).game_mode;
+          if (gm === "question-words") setSelectedGame("question-words");
+          else if (gm === "wfragen") setSelectedGame("wfragen");
+          else setSelectedGame("article");
+        }
       }).catch(() => {});
     } catch {}
   }, []);
@@ -376,6 +385,14 @@ export function TeacherPanel() {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [showBreakdown, session?.current_question_index]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Flash a winner celebration overlay for 2.2s when breakdown starts
+  useEffect(() => {
+    if (!showBreakdown || !sessionLeaderboard.length) { setShowCelebration(false); return; }
+    setShowCelebration(true);
+    const t = setTimeout(() => setShowCelebration(false), 2200);
+    return () => clearTimeout(t);
+  }, [showBreakdown, session?.current_question_index]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Scatter avatars onto their chosen pills after breakdown
   useEffect(() => {
     if (!showBreakdown) { setPillAvatars([]); return; }
@@ -443,6 +460,19 @@ export function TeacherPanel() {
             />
           </div>
         </div>
+      )}
+
+      {/* ── Winner celebration overlay ── */}
+      {showCelebration && sessionLeaderboard.length > 0 && (
+        <>
+          <div className="fixed inset-0 z-[210] bg-poster-ink/85 backdrop-blur-md flex flex-col items-center justify-center gap-5 animate-in fade-in duration-300">
+            <div className="text-[11px] uppercase tracking-[0.3em] text-white/50 font-semibold">Current Leader</div>
+            <img src={avatarSrc(sessionLeaderboard[0].avatar)} alt="" className="w-28 h-28" draggable={false} />
+            <div className="text-6xl font-display font-bold text-white tracking-tight">{sessionLeaderboard[0].name}</div>
+            <div className="text-4xl font-bold text-poster-yellow tabular-nums">{sessionLeaderboard[0].points} pts</div>
+          </div>
+          <Confetti />
+        </>
       )}
 
       {/* ── QR — fixed top-right, doubles on hover ── */}

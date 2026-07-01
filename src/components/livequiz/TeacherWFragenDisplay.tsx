@@ -59,7 +59,7 @@ export function TeacherWFragenDisplay({
             <span className="text-poster-teal font-bold">{q.answer}</span>
           ) : (
             <span className="text-poster-ink/30 border-b-2 border-poster-ink/30 min-w-[2rem] inline-block text-center">
-              {q.answer.toLowerCase().startsWith("ein") ? "a/an" : "the"}
+              {(q.answer ?? "").toLowerCase().startsWith("ein") ? "a/an" : "the"}
             </span>
           )}
           <span>{q.boxedNoun}</span>

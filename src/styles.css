@@ -517,3 +517,9 @@ body {
 .prep-shake {
   animation: prep-shake 0.38s ease-in-out;
 }
+
+@keyframes confetti-fall {
+  0%   { transform: translateY(0) rotate(0deg);    opacity: 1; }
+  75%  { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(540deg); opacity: 0; }
+}
