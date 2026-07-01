@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { avatarSrc } from "./avatars";
 import type { StudentIdentity } from "./StudentLobby";
@@ -18,6 +18,32 @@ type Props = {
   submitting: boolean;
   onAnswer: (answer: string) => void;
 };
+
+/** Full-screen flash overlay that appears on each new question then fades out. */
+function QuizFlash({ text, idx }: { text: string; idx: number }) {
+  const [phase, setPhase] = useState<"in" | "out" | "done">("in");
+
+  useEffect(() => {
+    setPhase("in");
+    const t1 = setTimeout(() => setPhase("out"), 1500);
+    const t2 = setTimeout(() => setPhase("done"), 2000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [idx]);
+
+  if (phase === "done") return null;
+
+  return (
+    <div className={cn(
+      "fixed inset-0 z-[70] flex items-center justify-center pointer-events-auto",
+      "bg-poster-bg/88 backdrop-blur-sm transition-opacity duration-500",
+      phase === "out" ? "opacity-0" : "opacity-100",
+    )}>
+      <span className="quiz-flash-bounce text-center text-2xl font-bold uppercase tracking-widest text-poster-ink px-8">
+        {text}
+      </span>
+    </div>
+  );
+}
 
 export function StudentWFragenQuiz({ identity, session, myResponses, submitting, onAnswer }: Props) {
   const [localAnswer, setLocalAnswer] = useState<string | null>(null);
@@ -42,6 +68,9 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
   }
 
   const isArticleStep = q.step === "article";
+  const flashText = isArticleStep
+    ? `${q.correctWWord}? — ${W_EN[q.correctWWord] ?? ""} · tap the article`
+    : "Tap the question word below";
 
   function handleTap(answer: string) {
     if (locked || submitting) return;
@@ -61,7 +90,7 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
       isArticleStep ? "pointer-events-none" : "bg-poster-bg",
     )}>
 
-      {/* Slim header: name + score only */}
+      {/* Slim header */}
       <div className="pointer-events-auto flex items-center justify-between px-4 py-2 bg-white/95 backdrop-blur-sm border-b border-poster-ink/10 shrink-0">
         <div className="flex items-center gap-2">
           <img src={avatarSrc(identity.student_avatar)} alt="" className="w-7 h-7" draggable={false} />
@@ -73,11 +102,10 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
         </div>
       </div>
 
-      {/* Wword step: sentence context + pulsing instruction + SVG map */}
+      {/* Wword step: sentence + SVG map */}
       {!isArticleStep && (
         <>
-          {/* Sentence */}
-          <div className="shrink-0 px-4 pt-3 pb-1 text-center">
+          <div className="shrink-0 px-4 pt-3 pb-2 text-center">
             <div className="text-sm font-bold text-poster-ink flex items-baseline flex-wrap gap-x-1 gap-y-0.5 justify-center leading-tight">
               {q.pre && <span>{q.pre}</span>}
               <span className="inline-flex items-baseline gap-1 border-2 border-poster-teal/50 rounded px-1.5 py-0.5 bg-poster-teal/5">
@@ -89,14 +117,6 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
             </div>
           </div>
 
-          {/* Pulsing instruction */}
-          <div className="shrink-0 text-center pb-2">
-            <span className="quiz-instruction-pulse text-[11px] uppercase tracking-widest text-poster-ink/60 font-semibold">
-              Tap the question word below
-            </span>
-          </div>
-
-          {/* SVG map */}
           <div className="flex-1 flex flex-col justify-center min-h-0">
             <div className="px-3 pb-4">
               <QuestionWordSVGMap
@@ -113,17 +133,8 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
         </>
       )}
 
-      {/* Article step: pulsing instruction floats over cheatsheet, then transparent spacer */}
-      {isArticleStep && (
-        <>
-          <div className="pointer-events-none shrink-0 text-center py-2 bg-white/80 backdrop-blur-sm border-b border-poster-ink/5">
-            <span className="quiz-instruction-pulse text-[11px] uppercase tracking-widest text-poster-teal/80 font-semibold">
-              <span className="font-bold">{q.correctWWord}?</span> — {W_EN[q.correctWWord]} · now tap the article
-            </span>
-          </div>
-          <div className="flex-1" />
-        </>
-      )}
+      {/* Article step: transparent spacer so cheatsheet shows through */}
+      {isArticleStep && <div className="flex-1" />}
 
       {/* Result */}
       {myAnswer && (
@@ -142,6 +153,9 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
           )}
         </div>
       )}
+
+      {/* Instruction flash */}
+      <QuizFlash text={flashText} idx={idx} />
     </div>
   );
 }

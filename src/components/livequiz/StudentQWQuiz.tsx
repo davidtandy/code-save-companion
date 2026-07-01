@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { avatarSrc } from "./avatars";
 import type { StudentIdentity } from "./StudentLobby";
@@ -14,6 +14,32 @@ type Props = {
   submitting: boolean;
   onAnswer: (answer: string) => void;
 };
+
+/** Full-screen flash overlay that appears on each new question then fades out. */
+function QuizFlash({ text, idx }: { text: string; idx: number }) {
+  const [phase, setPhase] = useState<"in" | "out" | "done">("in");
+
+  useEffect(() => {
+    setPhase("in");
+    const t1 = setTimeout(() => setPhase("out"), 1500);
+    const t2 = setTimeout(() => setPhase("done"), 2000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [idx]);
+
+  if (phase === "done") return null;
+
+  return (
+    <div className={cn(
+      "fixed inset-0 z-[70] flex items-center justify-center pointer-events-auto",
+      "bg-poster-bg/88 backdrop-blur-sm transition-opacity duration-500",
+      phase === "out" ? "opacity-0" : "opacity-100",
+    )}>
+      <span className="quiz-flash-bounce text-center text-2xl font-bold uppercase tracking-widest text-poster-ink px-8">
+        {text}
+      </span>
+    </div>
+  );
+}
 
 export function StudentQWQuiz({ identity, session, myResponses, submitting, onAnswer }: Props) {
   const [localAnswer, setLocalAnswer] = useState<string | null>(null);
@@ -53,7 +79,7 @@ export function StudentQWQuiz({ identity, session, myResponses, submitting, onAn
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-poster-bg">
-      {/* Slim header: name + score only */}
+      {/* Slim header */}
       <div className="flex items-center justify-between px-4 py-2 bg-white/95 backdrop-blur-sm border-b border-poster-ink/10 shrink-0">
         <div className="flex items-center gap-2">
           <img src={avatarSrc(identity.student_avatar)} alt="" className="w-7 h-7" draggable={false} />
@@ -68,17 +94,10 @@ export function StudentQWQuiz({ identity, session, myResponses, submitting, onAn
       </div>
 
       {/* Prompt word */}
-      <div className="shrink-0 text-center pt-3 pb-1 px-4">
+      <div className="shrink-0 text-center pt-3 pb-2 px-4">
         <div className="text-4xl font-display font-bold text-poster-ink tracking-wide leading-none">
           {prompt}
         </div>
-      </div>
-
-      {/* Pulsing instruction */}
-      <div className="shrink-0 text-center pb-2">
-        <span className="quiz-instruction-pulse text-[11px] uppercase tracking-widest text-poster-ink/60 font-semibold">
-          {subLabel}
-        </span>
       </div>
 
       {/* SVG click map */}
@@ -110,6 +129,9 @@ export function StudentQWQuiz({ identity, session, myResponses, submitting, onAn
           )}
         </div>
       )}
+
+      {/* Instruction flash */}
+      <QuizFlash text={subLabel} idx={idx} />
     </div>
   );
 }

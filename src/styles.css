@@ -187,12 +187,12 @@ body {
 
 /* ============= Animations & component styles ported verbatim ============= */
 
-@keyframes quiz-instruction-pulse {
-  0%, 100% { transform: scale(1);    opacity: 0.55; }
-  50%       { transform: scale(1.1); opacity: 1;    }
+@keyframes quiz-flash-bounce {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.07); }
 }
-.quiz-instruction-pulse {
-  animation: quiz-instruction-pulse 1.8s ease-in-out infinite;
+.quiz-flash-bounce {
+  animation: quiz-flash-bounce 0.65s ease-in-out infinite;
   display: inline-block;
 }
 
