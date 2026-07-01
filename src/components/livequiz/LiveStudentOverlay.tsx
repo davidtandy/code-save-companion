@@ -118,7 +118,7 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
   // Question Words has no poster pill at all; W-Fragen's word step answers via the
   // question-word icons, not poster pills — only its article step uses real pills.
   const usesPosterPills = session?.game_mode !== "question-words"
-    && (session?.game_mode !== "wfragen" || q?.step === "article");
+    && (q?.kind !== "wfragen" || q?.step === "article");
   const tiers = q && usesPosterPills ? eliminationTiersData(q) : null;
   const cappedElimCount = (session?.phase === "active" && !locked && tiers)
     ? computeElimCount(elapsed, timerMaxMs, tiers.tier0Count, tiers.tier1Count, tiers.tier2Count, tiers.tier3Count, tiers.tier4Count)
@@ -227,7 +227,7 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
 
   /* ── Question Words: dedicated full-screen quiz UI — its question shape has
    * no `.prep` field and no poster pill to tap. */
-  if (session.phase === "active" && session.game_mode === "question-words") {
+  if (session.phase === "active" && session.game_mode === "question-words" && q?.kind === "question-words") {
     return (
       <StudentQWQuiz
         identity={identity}
@@ -241,7 +241,7 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, quizFillMod
   /* ── W-Fragen: header always rendered by StudentWFragenQuiz.
    * Wword step: opaque overlay with SVG icon map.
    * Article step: transparent overlay — header persists, cheatsheet shows through and is tappable. */
-  if (session.phase === "active" && session.game_mode === "wfragen") {
+  if (session.phase === "active" && session.game_mode === "wfragen" && q?.kind === "wfragen") {
     return (
       <StudentWFragenQuiz
         identity={identity}

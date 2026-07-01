@@ -444,7 +444,7 @@ export function TeacherPanel() {
 
   // W-Fragen's word step doesn't involve the cheatsheet at all (students answer via
   // the question-word icons) — hide it and show the three icons large instead.
-  const showBigIconsTakeover = session?.phase === "active" && session?.game_mode === "wfragen" && activeQ?.step === "wword";
+  const showBigIconsTakeover = session?.phase === "active" && session?.game_mode === "wfragen" && activeQ?.kind === "wfragen" && activeQ?.step === "wword";
 
   return (
     <>
@@ -475,8 +475,8 @@ export function TeacherPanel() {
         </>
       )}
 
-      {/* ── QR — fixed top-right, doubles on hover ── */}
-      <div className="fixed top-0 right-0 z-[150] flex flex-col items-end gap-1 transition-transform duration-200 origin-top-right hover:scale-[2.5]">
+      {/* ── QR — fixed below header bar on the right, doubles on hover ── */}
+      <div className="fixed top-[52px] right-0 z-[150] flex flex-col items-end gap-1 transition-transform duration-200 origin-top-right hover:scale-[2.5]">
         <div className="bg-white rounded-bl-xl p-1.5 shadow-lg border-b border-l border-poster-ink/10">
           <QRCode value={joinUrl} size={52} level="M" />
         </div>
@@ -500,7 +500,7 @@ export function TeacherPanel() {
           }}
         >
           {activeQ && (
-            session?.game_mode === "question-words"
+            session?.game_mode === "question-words" && activeQ?.kind === "question-words"
               ? <TeacherQWDisplay
                   q={activeQ}
                   questionIndex={session.current_question_index}
