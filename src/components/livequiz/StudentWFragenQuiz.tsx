@@ -61,13 +61,14 @@ function QuizFlash({ text, idx }: { text: string; idx: number }) {
 
 /** 3-column pill grid for selecting a W-question word. */
 function WFragenWordPills({
-  onTap, seenWords, submitting, normalizedLocal, normalizedWrong,
+  onTap, seenWords, disabled, normalizedLocal, normalizedWrong, animatingWord,
 }: {
   onTap: (word: string) => void;
   seenWords: Set<string>;
-  submitting: boolean;
+  disabled: boolean;
   normalizedLocal: string | null;
   normalizedWrong: string | null;
+  animatingWord: string | null;
 }) {
   const [peeking, setPeeking] = useState(false);
 
@@ -79,21 +80,24 @@ function WFragenWordPills({
             {words.map((word) => {
               const showGerman = seenWords.has(word) && !peeking;
               const label = showGerman ? word : W_PILL_EN[word];
-              const isWrong  = normalizedWrong === word;
-              const isActive = normalizedLocal === word && !isWrong;
+              const isWrong    = normalizedWrong === word;
+              const isActive   = normalizedLocal === word && !isWrong;
+              const isFlipping = animatingWord === word;
 
               return (
                 <button
                   key={word}
                   onClick={() => onTap(word)}
-                  disabled={submitting}
+                  disabled={disabled}
                   className={cn(
-                    "flex-1 rounded-sm flex items-center justify-center text-white font-slab font-bold shadow-sm select-none text-base leading-tight px-2 transition-all duration-150",
+                    "flex-1 rounded-sm flex items-center justify-center text-white font-slab font-bold shadow-sm select-none text-base leading-tight px-2 transition-colors duration-150",
                     color === "green"  && "bg-poster-green",
                     color === "yellow" && "bg-poster-yellow",
                     color === "purple" && "bg-poster-purple",
-                    isWrong  && "opacity-40 scale-95",
-                    isActive && "opacity-70 scale-95",
+                    isFlipping && "pill-correct-flip ring-4 ring-poster-teal ring-offset-2",
+                    isWrong    && "opacity-40 scale-95",
+                    isActive   && "opacity-70 scale-95",
+                    disabled && !isFlipping && "opacity-50",
                   )}
                 >
                   {label}
@@ -136,7 +140,6 @@ function WFragenPostAnswer({
 }) {
   return (
     <div className="flex-1 flex min-h-0 overflow-hidden">
-      {/* Left: answer + points */}
       <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center border-r border-poster-ink/10">
         <div className="text-5xl font-display font-bold text-poster-ink tracking-wide">{correctWord}</div>
         <div className="text-3xl font-bold text-poster-teal tabular-nums">+{points} pts</div>
@@ -144,7 +147,6 @@ function WFragenPostAnswer({
           Waiting for next question…
         </div>
       </div>
-      {/* Right: live rankings */}
       <div className="flex-1 flex flex-col gap-1.5 px-3 py-4 overflow-y-auto">
         {leaderboard.map((entry, i) => (
           <div
@@ -181,21 +183,49 @@ function WFragenPostAnswer({
 export function StudentWFragenQuiz({ identity, session, myResponses, submitting, onAnswer }: Props) {
   const [localAnswer, setLocalAnswer] = useState<string | null>(null);
   const [seenWords, setSeenWords] = useState<Set<string>>(new Set());
+  const [animatingWord, setAnimatingWord] = useState<string | null>(null);
+  const [showPostAnswer, setShowPostAnswer] = useState(false);
   const { leaderboard } = useLiveQuiz();
   const zones = loadZones();
 
   const idx = session.current_question_index;
   const q = session.questions?.[idx] as WFragenQuestion | undefined;
 
-  // Reset local answer each time question advances
-  useEffect(() => { setLocalAnswer(null); }, [idx]);
+  // Reset per question
+  useEffect(() => {
+    setLocalAnswer(null);
+    setAnimatingWord(null);
+    setShowPostAnswer(false);
+  }, [idx]);
+
+  // When a correct answer lands: play flip animation, then reveal post-answer screen
+  const locked = !!myResponses.find((r) => r.question_index === idx)?.is_correct;
+
+  useEffect(() => {
+    if (!locked || !q) {
+      setAnimatingWord(null);
+      setShowPostAnswer(false);
+      return;
+    }
+    const word = q.correctWWord?.toUpperCase();
+    setAnimatingWord(word ?? null);
+    // Flip the pill text to German at the squish midpoint (~28% of 0.6s = 168ms)
+    const t1 = setTimeout(() => {
+      if (word) setSeenWords(prev => { const s = new Set(prev); s.add(word); return s; });
+    }, 160);
+    // Transition to post-answer after animation completes
+    const t2 = setTimeout(() => {
+      setAnimatingWord(null);
+      setShowPostAnswer(true);
+    }, 850);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [locked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalPoints = myResponses
     .filter((r) => r.question_index >= 0)
     .reduce((sum, r) => sum + (r.points || 0), 0);
 
   const myAnswer = myResponses.find((r) => r.question_index === idx);
-  const locked = !!myAnswer?.is_correct;
 
   if (!q) {
     return (
@@ -212,12 +242,7 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
 
   function handleTap(answer: string) {
     if (locked || submitting) return;
-    const upper = answer.toUpperCase();
-    setLocalAnswer(upper);
-    // Only flip to German after a correct answer
-    if (!isArticleStep && upper === q.correctWWord?.toUpperCase()) {
-      setSeenWords(prev => { const s = new Set(prev); s.add(upper); return s; });
-    }
+    setLocalAnswer(answer.toUpperCase());
     onAnswer(answer);
   }
 
@@ -226,14 +251,12 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
   const normalizedWrong   = (myAnswer && !myAnswer.is_correct && localAnswer) ? normalizedLocal : null;
 
   return (
-    // Article step: transparent + pointer-events-none so the cheatsheet shows through and is tappable.
-    // Wword step: opaque background covers the cheatsheet.
     <div className={cn(
       "fixed inset-0 z-[60] flex flex-col",
       isArticleStep ? "pointer-events-none" : "bg-poster-bg",
     )}>
 
-      {/* Header: name | sentence | counter+score */}
+      {/* Header */}
       <div className="pointer-events-auto flex items-center px-4 py-2 bg-white/95 backdrop-blur-sm border-b border-poster-ink/10 shrink-0 gap-3">
         <div className="flex items-center gap-2 shrink-0">
           <img src={avatarSrc(identity.student_avatar)} alt="" className="w-7 h-7" draggable={false} />
@@ -265,8 +288,7 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
 
       {/* Wword step body */}
       {!isArticleStep && (
-        locked ? (
-          // Post-answer: answer + points on left, live rankings on right
+        locked && showPostAnswer ? (
           <WFragenPostAnswer
             correctWord={normalizedCorrect ?? ""}
             points={myAnswer?.points ?? 0}
@@ -291,17 +313,18 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
           <WFragenWordPills
             onTap={handleTap}
             seenWords={seenWords}
-            submitting={submitting}
-            normalizedLocal={normalizedLocal}
-            normalizedWrong={normalizedWrong}
+            disabled={locked || submitting}
+            normalizedLocal={!locked ? normalizedLocal : null}
+            normalizedWrong={!locked ? normalizedWrong : null}
+            animatingWord={animatingWord}
           />
         )
       )}
 
-      {/* Article step: transparent spacer so cheatsheet shows through */}
+      {/* Article step: transparent spacer */}
       {isArticleStep && <div className="flex-1" />}
 
-      {/* Result bar: wword wrong attempt, or article step result */}
+      {/* Result bar: wword wrong attempt, or article step */}
       {myAnswer && (isArticleStep || !locked) && (
         <div className={cn(
           "pointer-events-auto px-6 py-4 text-center border-t shrink-0 transition-all duration-500",

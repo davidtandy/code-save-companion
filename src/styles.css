@@ -196,6 +196,19 @@ body {
   display: inline-block;
 }
 
+/* Pill card-flip: squishes to 0 width (text change happens mid-squish), then expands to reveal German word */
+@keyframes pill-correct-flip {
+  0%   { transform: scaleX(1); }
+  28%  { transform: scaleX(0.02); }
+  72%  { transform: scaleX(1.1); }
+  88%  { transform: scaleX(0.97); }
+  100% { transform: scaleX(1); }
+}
+.pill-correct-flip {
+  animation: pill-correct-flip 0.6s ease-in-out forwards;
+  transform-origin: center;
+}
+
 @keyframes poster-pulse {
   0%, 100% { box-shadow: 0 0 0 0 hsl(var(--poster-ink) / 0); transform: scale(1); }
   50%      { box-shadow: 0 0 0 6px hsl(var(--poster-ink) / 0.15); transform: scale(1.015); }
