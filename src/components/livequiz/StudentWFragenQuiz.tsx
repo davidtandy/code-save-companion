@@ -59,6 +59,8 @@ function QuizFlash({ text, idx }: { text: string; idx: number }) {
   );
 }
 
+const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#@%?!";
+
 /** 3-column pill grid for selecting a W-question word. */
 function WFragenWordPills({
   onTap, seenWords, disabled, normalizedLocal, normalizedWrong, animatingWord,
@@ -71,6 +73,30 @@ function WFragenWordPills({
   animatingWord: string | null;
 }) {
   const [peeking, setPeeking] = useState(false);
+  const [scrambleText, setScrambleText] = useState<string | null>(null);
+
+  // Matrix-style character scramble when a correct answer is confirmed
+  useEffect(() => {
+    if (!animatingWord) { setScrambleText(null); return; }
+    const len = animatingWord.length;
+    let elapsed = 0;
+    const tick = 45;
+    const duration = 580;
+    const id = setInterval(() => {
+      elapsed += tick;
+      if (elapsed >= duration) {
+        clearInterval(id);
+        setScrambleText(animatingWord); // lock to German word
+      } else {
+        setScrambleText(
+          Array.from({ length: len }, () =>
+            SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)]
+          ).join("")
+        );
+      }
+    }, tick);
+    return () => clearInterval(id);
+  }, [animatingWord]);
 
   return (
     <div className="flex-1 flex flex-col px-4 pt-4 pb-2 gap-2 min-h-0">
@@ -78,11 +104,13 @@ function WFragenWordPills({
         {WWORD_COLUMNS.map(({ color, words }) => (
           <div key={color} className="flex flex-col gap-3 flex-1 min-h-0">
             {words.map((word) => {
-              const showGerman = seenWords.has(word) && !peeking;
-              const label = showGerman ? word : W_PILL_EN[word];
-              const isWrong    = normalizedWrong === word;
-              const isActive   = normalizedLocal === word && !isWrong;
-              const isFlipping = animatingWord === word;
+              const isAnimating = animatingWord === word;
+              const showGerman  = seenWords.has(word) && !peeking;
+              const label = isAnimating && scrambleText
+                ? scrambleText
+                : (showGerman ? word : W_PILL_EN[word]);
+              const isWrong  = normalizedWrong === word;
+              const isActive = normalizedLocal === word && !isWrong;
 
               return (
                 <button
@@ -94,10 +122,10 @@ function WFragenWordPills({
                     color === "green"  && "bg-poster-green",
                     color === "yellow" && "bg-poster-yellow",
                     color === "purple" && "bg-poster-purple",
-                    isFlipping && "pill-correct-flip ring-4 ring-poster-teal ring-offset-2",
-                    isWrong    && "opacity-40 scale-95",
-                    isActive   && "opacity-70 scale-95",
-                    disabled && !isFlipping && "opacity-50",
+                    isAnimating && "ring-4 ring-poster-teal ring-offset-2 font-mono tracking-widest",
+                    isWrong  && "opacity-40 scale-95",
+                    isActive && "opacity-70 scale-95",
+                    disabled && !isAnimating && "opacity-50",
                   )}
                 >
                   {label}
@@ -209,15 +237,15 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
     }
     const word = q.correctWWord?.toUpperCase();
     setAnimatingWord(word ?? null);
-    // Flip the pill text to German at the squish midpoint (~28% of 0.6s = 168ms)
+    // Update seenWords after scramble finishes (~580ms) so German word is locked in
     const t1 = setTimeout(() => {
       if (word) setSeenWords(prev => { const s = new Set(prev); s.add(word); return s; });
-    }, 160);
-    // Transition to post-answer after animation completes
+    }, 620);
+    // Transition to post-answer shortly after scramble settles
     const t2 = setTimeout(() => {
       setAnimatingWord(null);
       setShowPostAnswer(true);
-    }, 850);
+    }, 950);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [locked]); // eslint-disable-line react-hooks/exhaustive-deps
 
