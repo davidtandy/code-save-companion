@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { avatarSrc } from "./avatars";
 import type { StudentIdentity } from "./StudentLobby";
@@ -63,7 +63,7 @@ const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#@%?!";
 
 /** 3-column pill grid for selecting a W-question word. */
 function WFragenWordPills({
-  onTap, seenWords, disabled, normalizedLocal, normalizedWrong, animatingWord,
+  onTap, seenWords, disabled, normalizedLocal, normalizedWrong, animatingWord, animationTarget,
 }: {
   onTap: (word: string) => void;
   seenWords: Set<string>;
@@ -71,32 +71,44 @@ function WFragenWordPills({
   normalizedLocal: string | null;
   normalizedWrong: string | null;
   animatingWord: string | null;
+  animationTarget: string | null;
 }) {
   const [peeking, setPeeking] = useState(false);
   const [scrambleText, setScrambleText] = useState<string | null>(null);
 
-  // Matrix-style character scramble when a correct answer is confirmed
+  // Matrix-style scramble. Uses German word length for the scramble chars,
+  // then resolves to animationTarget (German "WER?" first time, English "who?" thereafter).
+  // After locking, overflow chars (up to 3 per side) briefly appear and fade away.
   useEffect(() => {
-    if (!animatingWord) { setScrambleText(null); return; }
+    if (!animatingWord || !animationTarget) { setScrambleText(null); return; }
     const len = animatingWord.length;
     let elapsed = 0;
+    let landingTick = 0;
     const tick = 45;
     const duration = 1000;
+    const randChar = () => SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
     const id = setInterval(() => {
       elapsed += tick;
       if (elapsed >= duration) {
-        clearInterval(id);
-        setScrambleText(animatingWord); // lock to German word
+        landingTick++;
+        // maxSide reduces 3→2→1→0 over 6 ticks, then clears
+        const maxSide = Math.max(0, 3 - Math.floor(landingTick / 2));
+        if (maxSide === 0) {
+          clearInterval(id);
+          setScrambleText(animationTarget);
+          return;
+        }
+        const leftCount  = Math.floor(Math.random() * (maxSide + 1));
+        const rightCount = Math.floor(Math.random() * (maxSide + 1));
+        const left  = Array.from({ length: leftCount },  randChar).join("");
+        const right = Array.from({ length: rightCount }, randChar).join("");
+        setScrambleText(left + animationTarget + right);
       } else {
-        setScrambleText(
-          Array.from({ length: len }, () =>
-            SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)]
-          ).join("")
-        );
+        setScrambleText(Array.from({ length: len }, randChar).join(""));
       }
     }, tick);
     return () => clearInterval(id);
-  }, [animatingWord]);
+  }, [animatingWord]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex-1 flex flex-col px-4 pt-4 pb-2 gap-2 min-h-0">
@@ -106,8 +118,9 @@ function WFragenWordPills({
             {words.map((word) => {
               const isAnimating = animatingWord === word;
               const showGerman  = seenWords.has(word) && !peeking;
+              // While animating: show scramble text. Otherwise: German (if unlocked) or English.
               const label = isAnimating && scrambleText
-                ? (scrambleText === animatingWord ? scrambleText + "?" : scrambleText)
+                ? scrambleText
                 : (showGerman ? word + "?" : W_PILL_EN[word]);
               const isWrong  = normalizedWrong === word;
               const isActive = normalizedLocal === word && !isWrong;
@@ -212,45 +225,66 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
   const [localAnswer, setLocalAnswer] = useState<string | null>(null);
   const [optimisticCorrect, setOptimisticCorrect] = useState(false);
   const [seenWords, setSeenWords] = useState<Set<string>>(new Set());
+  const seenWordsRef = useRef(seenWords);
+  seenWordsRef.current = seenWords;
   const [animatingWord, setAnimatingWord] = useState<string | null>(null);
+  const [animationTarget, setAnimationTarget] = useState<string | null>(null);
   const [showPostAnswer, setShowPostAnswer] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const { leaderboard } = useLiveQuiz();
   const zones = loadZones();
 
   const idx = session.current_question_index;
   const q = session.questions?.[idx] as WFragenQuestion | undefined;
 
+  // Timer tick — drives "too slow" indicator
+  useEffect(() => {
+    if (session.phase !== "active") return;
+    const t = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(t);
+  }, [session.phase]);
+
   // Reset per question
   useEffect(() => {
     setLocalAnswer(null);
     setOptimisticCorrect(false);
     setAnimatingWord(null);
+    setAnimationTarget(null);
     setShowPostAnswer(false);
+    setNow(Date.now());
   }, [idx]);
 
   // When a correct answer lands: play scramble animation, then reveal post-answer screen.
-  // Use optimisticCorrect so the animation fires immediately on tap without a server round-trip.
+  // First unlock: English → German (sticks). Subsequent: German → English (temporary).
   const serverLocked = !!myResponses.find((r) => r.question_index === idx)?.is_correct;
   const locked = serverLocked || optimisticCorrect;
 
   useEffect(() => {
     if (!locked || !q) {
       setAnimatingWord(null);
+      setAnimationTarget(null);
       setShowPostAnswer(false);
       return;
     }
     const word = q.correctWWord?.toUpperCase();
-    setAnimatingWord(word ?? null);
-    // Update seenWords after 1000ms scramble ends
-    const t1 = setTimeout(() => {
-      if (word) setSeenWords(prev => { const s = new Set(prev); s.add(word); return s; });
-    }, 1040);
-    // Transition to post-answer after scramble settles
-    const t2 = setTimeout(() => {
+    if (!word) return;
+    const isFirstUnlock = !seenWordsRef.current.has(word);
+    setAnimatingWord(word);
+    setAnimationTarget(isFirstUnlock ? word + "?" : W_PILL_EN[word]);
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    if (isFirstUnlock) {
+      // Unlock permanently after scramble + landing (~1270ms total)
+      timers.push(setTimeout(() => {
+        setSeenWords(prev => { const s = new Set(prev); s.add(word); return s; });
+      }, 1300));
+    }
+    // Transition to post-answer after animation settles
+    timers.push(setTimeout(() => {
       setAnimatingWord(null);
+      setAnimationTarget(null);
       setShowPostAnswer(true);
-    }, 1400);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    }, 1650));
+    return () => timers.forEach(clearTimeout);
   }, [locked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalPoints = myResponses
@@ -284,6 +318,10 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
   const normalizedCorrect = locked ? q.correctWWord?.toUpperCase() : null;
   // Optimistic wrong: show immediately on tap without waiting for server
   const normalizedWrong   = (localAnswer && !optimisticCorrect && localAnswer !== q.correctWWord?.toUpperCase()) ? localAnswer : null;
+
+  const startedAt = session.question_started_at ? new Date(session.question_started_at).getTime() : Infinity;
+  const timerMaxMs = (session.timer_max_seconds || 30) * 1000;
+  const timesUp = !locked && !isArticleStep && (now - startedAt) >= timerMaxMs;
 
   return (
     <div className={cn(
@@ -345,14 +383,25 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
             </div>
           </div>
         ) : (
-          <WFragenWordPills
-            onTap={handleTap}
-            seenWords={seenWords}
-            disabled={locked || submitting}
-            normalizedLocal={!locked ? normalizedLocal : null}
-            normalizedWrong={!locked ? normalizedWrong : null}
-            animatingWord={animatingWord}
-          />
+          <div className="flex-1 flex flex-col min-h-0 relative">
+            <WFragenWordPills
+              onTap={handleTap}
+              seenWords={seenWords}
+              disabled={locked || submitting || timesUp}
+              normalizedLocal={!locked ? normalizedLocal : null}
+              normalizedWrong={!locked ? normalizedWrong : null}
+              animatingWord={animatingWord}
+              animationTarget={animationTarget}
+            />
+            {timesUp && (
+              <div className="absolute inset-0 flex items-center justify-center bg-poster-bg/80 backdrop-blur-sm">
+                <div className="text-center">
+                  <div className="text-4xl font-display font-bold text-poster-red tracking-tight">Too slow!</div>
+                  <div className="text-sm text-poster-ink/40 mt-1 font-medium">Waiting for next question…</div>
+                </div>
+              </div>
+            )}
+          </div>
         )
       )}
 
