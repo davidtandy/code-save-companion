@@ -152,6 +152,7 @@ export function TeacherPanel() {
   const [selectedGame, setSelectedGame] = useState<"article" | "question-words" | "wfragen">("article");
   const [wfragenLevel, setWfragenLevel] = useState<"easy" | "hard">("easy");
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [panelExpanded, setPanelExpanded] = useState(false);
   const [statsExpanded, setStatsExpanded] = useState(false);
   const [prevRankOrder, setPrevRankOrder] = useState<string[]>([]);
@@ -244,12 +245,32 @@ export function TeacherPanel() {
     }
   }
 
+  function freshQuestions() {
+    return selectedGame === "question-words" ? sampleQWQuestions()
+      : selectedGame === "wfragen" ? sampleWFragenQuestions(wfragenLevel)
+      : sampleQuestions(20);
+  }
+
   async function resetSession() {
     if (!session) return;
-    if (!confirm("Reset session? Students stay connected and will see the lobby again.")) return;
     try {
       const row = await resetFn({
-        data: { sessionId: session.id, hostToken: session.host_token, questions: sampleQuestions(20) },
+        data: { sessionId: session.id, hostToken: session.host_token, questions: freshQuestions() },
+      });
+      setSession(row as Session);
+      setResponses([]);
+    } catch (e: any) {
+      alert(e?.message ?? "Reset failed");
+    } finally {
+      setConfirmReset(false);
+    }
+  }
+
+  async function playAgain() {
+    if (!session) return;
+    try {
+      const row = await resetFn({
+        data: { sessionId: session.id, hostToken: session.host_token, questions: freshQuestions() },
       });
       setSession(row as Session);
       setResponses([]);
@@ -602,12 +623,19 @@ export function TeacherPanel() {
                     <SkipForward size={16} />
                     {session.current_question_index + 1 >= session.questions.length ? "End → Results" : "Next Question →"}
                   </button>
-                  <button
-                    onClick={resetSession}
-                    className="w-full py-2 text-xs text-poster-ink/30 hover:text-poster-ink/60 flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <RotateCcw size={13} /> End / Reset
-                  </button>
+                  {confirmReset ? (
+                    <div className="flex gap-2 w-full">
+                      <button onClick={() => setConfirmReset(false)} className="flex-1 py-2 text-xs text-poster-ink/40 rounded-full border border-poster-ink/10 hover:bg-poster-ink/5 transition-colors">Cancel</button>
+                      <button onClick={resetSession} className="flex-1 py-2 text-xs text-red-500 font-semibold rounded-full border border-red-200 hover:bg-red-50 transition-colors">Yes, reset</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmReset(true)}
+                      className="w-full py-2 text-xs text-poster-ink/30 hover:text-poster-ink/60 flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <RotateCcw size={13} /> End / Reset
+                    </button>
+                  )}
                 </>
               ) : (
                 <>
@@ -657,17 +685,32 @@ export function TeacherPanel() {
                   )}
 
                   {(session.phase === "results" || session.phase === "ended") && (
-                    <div className="text-center text-sm font-semibold text-poster-ink/60 py-1">
-                      {session.phase === "results" ? "Showing results to students" : "Session ended"}
-                    </div>
+                    <>
+                      <div className="text-center text-sm font-semibold text-poster-ink/60 py-1">
+                        {session.phase === "results" ? "Showing results to students" : "Session ended"}
+                      </div>
+                      <button
+                        onClick={playAgain}
+                        className="w-full py-3 rounded-full bg-poster-teal/10 text-poster-teal font-bold flex items-center justify-center gap-2 hover:bg-poster-teal/20 transition-colors"
+                      >
+                        <RotateCcw size={16} /> Play Again
+                      </button>
+                    </>
                   )}
 
-                  <button
-                    onClick={resetSession}
-                    className="w-full py-2 text-xs text-poster-ink/30 hover:text-poster-ink/60 flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <RotateCcw size={13} /> End / Reset
-                  </button>
+                  {confirmReset ? (
+                    <div className="flex gap-2 w-full">
+                      <button onClick={() => setConfirmReset(false)} className="flex-1 py-2 text-xs text-poster-ink/40 rounded-full border border-poster-ink/10 hover:bg-poster-ink/5 transition-colors">Cancel</button>
+                      <button onClick={resetSession} className="flex-1 py-2 text-xs text-red-500 font-semibold rounded-full border border-red-200 hover:bg-red-50 transition-colors">Yes, reset</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmReset(true)}
+                      className="w-full py-2 text-xs text-poster-ink/30 hover:text-poster-ink/60 flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <RotateCcw size={13} /> End / Reset
+                    </button>
+                  )}
                 </>
               )}
             </div>
