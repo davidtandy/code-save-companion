@@ -285,7 +285,7 @@ export function TeacherPanel() {
     }
   }
 
-  const joinUrl = `${window.location.origin}/?livequiz`;
+  const joinUrl = "https://gglivequiz.lovable.app/?livequiz";
 
   // Timer for elimination animation
   const [now, setNow] = useState(Date.now());

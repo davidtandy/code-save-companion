@@ -209,7 +209,7 @@ export function TeacherPreviewPanel() {
 
   const answeredThisQ = responses.filter((r) => r.question_index === currentIdx).length;
   const sentence = activeQ ? buildPreviewSentence(activeQ) : null;
-  const joinUrl = typeof window !== "undefined" ? `${window.location.origin}/?livequiz` : "";
+  const joinUrl = "https://gglivequiz.lovable.app/?livequiz";
 
   return (
     <>
