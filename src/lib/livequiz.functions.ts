@@ -14,6 +14,8 @@ export const createLiveSession = createServerFn({ method: "POST" })
   .inputValidator((d: { code: string; gameMode: string; questions: unknown[]; timerMaxSeconds: number }) => d)
   .handler(async ({ data }) => {
     const sb = await admin();
+    // End any existing non-ended sessions so there's only one live session at a time
+    await sb.from("quiz_session").update({ phase: "ended" }).neq("phase", "ended");
     const { data: row, error } = await sb
       .from("quiz_session")
       .insert({
