@@ -31,6 +31,7 @@ type Props = {
   myResponses: any[];
   submitting: boolean;
   onAnswer: (answer: string) => void;
+  onLeave?: () => void;
 };
 
 /** Full-screen flash overlay that appears on each new question then fades out. */
@@ -221,7 +222,7 @@ function WFragenPostAnswer({
   );
 }
 
-export function StudentWFragenQuiz({ identity, session, myResponses, submitting, onAnswer }: Props) {
+export function StudentWFragenQuiz({ identity, session, myResponses, submitting, onAnswer, onLeave }: Props) {
   const [localAnswer, setLocalAnswer] = useState<string | null>(null);
   const [optimisticCorrect, setOptimisticCorrect] = useState(false);
   const [seenWords, setSeenWords] = useState<Set<string>>(new Set());
@@ -231,6 +232,7 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
   const [animationTarget, setAnimationTarget] = useState<string | null>(null);
   const [showPostAnswer, setShowPostAnswer] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [timesUpSince, setTimesUpSince] = useState<number | null>(null);
   const { leaderboard } = useLiveQuiz();
   const zones = loadZones();
 
@@ -323,6 +325,14 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
   const timerMaxMs = (session.timer_max_seconds || 30) * 1000;
   const timesUp = !locked && !isArticleStep && (now - startedAt) >= timerMaxMs;
 
+  useEffect(() => {
+    if (timesUp && timesUpSince === null) setTimesUpSince(Date.now());
+    if (!timesUp && timesUpSince !== null) setTimesUpSince(null);
+  }, [timesUp]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const timesUpWaitMs = timesUpSince !== null ? now - timesUpSince : 0;
+  const showLeaveButton = onLeave && timesUpWaitMs > 30_000;
+
   return (
     <div className={cn(
       "fixed inset-0 z-[60] flex flex-col",
@@ -398,6 +408,14 @@ export function StudentWFragenQuiz({ identity, session, myResponses, submitting,
                 <div className="text-center">
                   <div className="text-4xl font-display font-bold text-poster-red tracking-tight">Too slow!</div>
                   <div className="text-sm text-poster-ink/40 mt-1 font-medium">Waiting for next question…</div>
+                  {showLeaveButton && (
+                    <button
+                      onClick={onLeave}
+                      className="mt-4 text-xs text-poster-ink/30 underline hover:text-poster-ink/60 transition-colors"
+                    >
+                      Leave game
+                    </button>
+                  )}
                 </div>
               </div>
             )}

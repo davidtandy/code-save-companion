@@ -261,6 +261,7 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, onRipple, q
         myResponses={myResponses}
         submitting={submitting}
         onAnswer={handleAnswer}
+        onLeave={onLeave}
       />
     );
   }
