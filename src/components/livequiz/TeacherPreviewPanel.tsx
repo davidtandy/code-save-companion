@@ -243,7 +243,7 @@ export function TeacherPreviewPanel() {
                 Q{currentIdx + 1} / {questions.length}
                 {" · "}{answeredThisQ} / {FAKE_STUDENTS.length} answered
               </div>
-              <div className="text-5xl font-bold text-poster-ink leading-snug tracking-tight drop-shadow-sm">
+              <div className="text-5xl font-bold text-poster-ink leading-snug tracking-tight drop-shadow-sm" style={{ textShadow: "0 0 30px hsl(48 55% 96%), 0 0 60px hsl(48 55% 96%), 0 0 90px hsl(48 55% 96%), 0 0 120px hsl(48 55% 96%)" }}>
                 {sentence.deBefore && <span>{sentence.deBefore}</span>}
                 {showBreakdown ? (
                   <span key="filled" className="answer-fill text-poster-teal px-2">
@@ -257,7 +257,7 @@ export function TeacherPreviewPanel() {
                 {sentence.deAfter && <span>{sentence.deAfter.trimStart()}</span>}
               </div>
               {sentence.en && (
-                <div className="text-2xl text-poster-ink/60 font-medium drop-shadow-sm italic">
+                <div className="text-2xl text-poster-ink/60 font-medium drop-shadow-sm italic" style={{ textShadow: "0 0 30px hsl(48 55% 96%), 0 0 60px hsl(48 55% 96%), 0 0 90px hsl(48 55% 96%), 0 0 120px hsl(48 55% 96%)" }}>
                   {sentence.enBefore}
                   {sentence.enBlank && <span style={{ borderBottom: "2px solid currentColor", paddingBottom: 1 }}>{sentence.enBlank}</span>}
                   {sentence.enAfter}

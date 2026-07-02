@@ -334,8 +334,8 @@ export function LiveStudentOverlay({ identity, onLeave, onSetSubmit, onRipple, q
             {myAnswer && !myAnswer.is_correct && (
               <div className="text-xs font-semibold text-poster-red mb-1">Wrong — one try left (−500 pts)</div>
             )}
-            <div className="text-lg font-bold text-poster-ink leading-tight">{prompt}</div>
-            <div className="text-xs text-poster-ink/50 mt-0.5">{promptEn}</div>
+            <div className="text-lg font-bold text-poster-ink leading-tight" style={{ textShadow: "0 0 30px hsl(48 55% 96%), 0 0 60px hsl(48 55% 96%), 0 0 90px hsl(48 55% 96%), 0 0 120px hsl(48 55% 96%)" }}>{prompt}</div>
+            <div className="text-xs text-poster-ink/50 mt-0.5" style={{ textShadow: "0 0 30px hsl(48 55% 96%), 0 0 60px hsl(48 55% 96%), 0 0 90px hsl(48 55% 96%), 0 0 120px hsl(48 55% 96%)" }}>{promptEn}</div>
           </div>
         )}
         {/* Waiting indicator replaces prompt once locked */}
